@@ -48,15 +48,19 @@ test.describe('Password Visibility Toggle', () => {
   });
 
   test('should toggle password visibility', async ({ page }) => {
-    // Initially password should be hidden
+    // Initially password should be hidden (type="password")
     await expect(page.locator('input[name="password"]')).toHaveAttribute('type', 'password');
     
-    // Click visibility toggle
-    await page.click('button[mattooltip="Show password"]');
+    // Find and click the visibility toggle button using its matTooltip attribute
+    const passwordField = page.locator('mat-form-field').nth(1);
+    const toggleButton = passwordField.locator('button[type="button"]');
+    await toggleButton.click();
+    
+    // Now password should be visible
     await expect(page.locator('input[name="password"]')).toHaveAttribute('type', 'text');
     
     // Toggle back
-    await page.click('button[mattooltip="Hide password"]');
+    await toggleButton.click();
     await expect(page.locator('input[name="password"]')).toHaveAttribute('type', 'password');
   });
 });

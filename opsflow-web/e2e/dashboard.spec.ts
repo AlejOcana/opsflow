@@ -15,7 +15,8 @@ test.describe('Dashboard Navigation', () => {
 
   test('should display stats cards', async ({ page }) => {
     await expect(page.locator('.stat-card').first()).toBeVisible();
-    await expect(page.locator('.stat-label')).toContainText('Total Incidents');
+    // Use first() since stat-label appears multiple times
+    await expect(page.locator('.stat-label').first()).toContainText('Total Incidents');
   });
 
   test('should display priority alerts section', async ({ page }) => {
@@ -37,12 +38,25 @@ test.describe('Dashboard Navigation Links', () => {
   });
 
   test('should navigate to incidents page', async ({ page }) => {
+    // On mobile, sidenav is hidden - need to open menu first
+    const menuButton = page.locator('button[aria-label="Toggle menu"]');
+    if (await menuButton.isVisible()) {
+      await menuButton.click();
+      // Wait for sidenav to open
+      await page.waitForTimeout(300);
+    }
     await page.click('a[href="/incidents"]');
     await expect(page).toHaveURL('/incidents');
     await expect(page.locator('h1')).toContainText('Incidents');
   });
 
   test('should navigate to teams page', async ({ page }) => {
+    // On mobile, sidenav is hidden - need to open menu first
+    const menuButton = page.locator('button[aria-label="Toggle menu"]');
+    if (await menuButton.isVisible()) {
+      await menuButton.click();
+      await page.waitForTimeout(300);
+    }
     await page.click('a[href="/teams"]');
     await expect(page).toHaveURL('/teams');
   });
