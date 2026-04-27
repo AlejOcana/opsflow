@@ -1,0 +1,28 @@
+# Dependencies
+node_modules/
+opsflow-web/node_modules/
+
+# Angular
+.angular/
+opsflow-web/.angular/
+
+# Build output
+dist/
+opsflow-web/dist/
+
+# Logs
+*.log
+
+# IDE
+.vs/
+.vscode/
+*.user
+*.suo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Env
+.env
+*.local
