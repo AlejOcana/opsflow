@@ -418,7 +418,7 @@ export class AppComponent implements OnInit {
 
   getUserDisplayName(): string {
     const user = this.authService.currentUser();
-    return user ? `${user.firstName} ${user.lastName}` : '';
+    return user ? user.fullName : '';
   }
 
   logout() {

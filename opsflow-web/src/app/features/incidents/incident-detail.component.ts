@@ -85,8 +85,7 @@ import { IncidentService, IncidentDetail } from '../../core/services/incident.se
     .detail-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; margin: 24px 0; }
     .detail-item { display: flex; flex-direction: column; gap: 4px; strong { font-size: 12px; color: rgba(0,0,0,0.6); } span { font-size: 14px; } }
     .status-badge, .priority-badge { padding: 4px 12px; border-radius: 16px; font-size: 12px; font-weight: 500; margin-right: 8px; }
-    .status-badge.new { background: #e3f2fd; color: #1976d2; }
-    .status-badge.assigned { background: #fff3e0; color: #f57c00; }
+    .status-badge.open { background: #e3f2fd; color: #1976d2; }
     .status-badge.inprogress { background: #fff8e1; color: #f9a825; }
     .status-badge.resolved { background: #e8f5e9; color: #388e3c; }
     .status-badge.closed { background: #eceff1; color: #546e7a; }

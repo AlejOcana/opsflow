@@ -113,11 +113,11 @@ import { AuthService } from '../../core/services/auth.service';
             <span>Demo Credentials</span>
           </div>
           <div class="credentials-list">
-            <button mat-button (click)="fillCredentials('admin@opsflow.io', 'admin123')">
+            <button mat-button (click)="fillCredentials('admin@opsflow.io', 'Admin123!')">
               <mat-icon>person</mat-icon>
               <span>Admin</span>
             </button>
-            <button mat-button (click)="fillCredentials('manager@opsflow.io', 'manager123')">
+            <button mat-button (click)="fillCredentials('platformmgr@opsflow.io', 'Manager123!')">
               <mat-icon>supervised_user_circle</mat-icon>
               <span>Manager</span>
             </button>

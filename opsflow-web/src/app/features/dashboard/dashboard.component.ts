@@ -8,14 +8,17 @@ import { HttpClient } from '@angular/common/http';
 
 interface Stats {
   totalIncidents: number;
-  newIncidents: number;
+  openIncidents: number;
   inProgressIncidents: number;
   resolvedIncidents: number;
   closedIncidents: number;
-  criticalIncidents: number;
-  highPriorityIncidents: number;
-  teamCount: number;
-  userCount: number;
+  criticalCount: number;
+  highCount: number;
+  mediumCount: number;
+  lowCount: number;
+  totalUsers: number;
+  totalTeams: number;
+  totalOrganizations: number;
 }
 
 @Component({
@@ -44,8 +47,8 @@ interface Stats {
         <mat-card class="stat-card new">
           <mat-card-content>
             <mat-icon class="stat-icon">fiber_new</mat-icon>
-            <div class="stat-value">{{ stats().newIncidents }}</div>
-            <div class="stat-label">New</div>
+            <div class="stat-value">{{ stats().openIncidents }}</div>
+            <div class="stat-label">Open</div>
           </mat-card-content>
         </mat-card>
 
@@ -76,7 +79,7 @@ interface Stats {
         <mat-card class="stat-card teams">
           <mat-card-content>
             <mat-icon class="stat-icon">groups</mat-icon>
-            <div class="stat-value">{{ stats().teamCount }}</div>
+            <div class="stat-value">{{ stats().totalTeams }}</div>
             <div class="stat-label">Teams</div>
           </mat-card-content>
         </mat-card>
@@ -84,19 +87,19 @@ interface Stats {
 
       <div class="priority-alert">
         <h3>Attention Required</h3>
-        @if (stats().criticalIncidents > 0) {
+        @if (stats().criticalCount > 0) {
           <div class="alert-item critical">
             <mat-icon>error</mat-icon>
-            <span>{{ stats().criticalIncidents }} critical incidents</span>
+            <span>{{ stats().criticalCount }} critical incidents</span>
           </div>
         }
-        @if (stats().highPriorityIncidents > 0) {
+        @if (stats().highCount > 0) {
           <div class="alert-item high">
             <mat-icon>warning</mat-icon>
-            <span>{{ stats().highPriorityIncidents }} high priority incidents</span>
+            <span>{{ stats().highCount }} high priority incidents</span>
           </div>
         }
-        @if (stats().criticalIncidents === 0 && stats().highPriorityIncidents === 0) {
+        @if (stats().criticalCount === 0 && stats().highCount === 0) {
           <div class="alert-item success">
             <mat-icon>check_circle</mat-icon>
             <span>No critical or high priority incidents</span>
@@ -216,14 +219,17 @@ interface Stats {
 export class DashboardComponent implements OnInit {
   stats = signal<Stats>({
     totalIncidents: 0,
-    newIncidents: 0,
+    openIncidents: 0,
     inProgressIncidents: 0,
     resolvedIncidents: 0,
     closedIncidents: 0,
-    criticalIncidents: 0,
-    highPriorityIncidents: 0,
-    teamCount: 0,
-    userCount: 0
+    criticalCount: 0,
+    highCount: 0,
+    mediumCount: 0,
+    lowCount: 0,
+    totalUsers: 0,
+    totalTeams: 0,
+    totalOrganizations: 0
   });
 
   constructor(private http: HttpClient) {}
@@ -232,7 +238,7 @@ export class DashboardComponent implements OnInit {
     const token = localStorage.getItem('token');
     const headers = { Authorization: `Bearer ${token}` };
 
-    this.http.get<Stats>('/api/dashboard', { headers }).subscribe({
+    this.http.get<Stats>('/api/dashboard/stats', { headers }).subscribe({
       next: (data) => this.stats.set(data),
       error: () => {}
     });

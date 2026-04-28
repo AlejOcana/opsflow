@@ -53,8 +53,7 @@ import { IncidentService, IncidentList } from '../../core/services/incident.serv
             <mat-label>Status</mat-label>
             <mat-select [(ngModel)]="filters.status" (selectionChange)="loadIncidents()">
               <mat-option value="">All Statuses</mat-option>
-              <mat-option value="New">New</mat-option>
-              <mat-option value="Assigned">Assigned</mat-option>
+              <mat-option value="Open">Open</mat-option>
               <mat-option value="InProgress">In Progress</mat-option>
               <mat-option value="Resolved">Resolved</mat-option>
               <mat-option value="Closed">Closed</mat-option>
@@ -309,8 +308,7 @@ import { IncidentService, IncidentList } from '../../core/services/incident.serv
       font-size: 12px;
       font-weight: 500;
       
-      &.new { background: #e3f2fd; color: #1976d2; }
-      &.assigned { background: #fff3e0; color: #f57c00; }
+      &.open { background: #e3f2fd; color: #1976d2; }
       &.inprogress { background: #fff8e1; color: #f9a825; }
       &.resolved { background: #e8f5e9; color: #388e3c; }
       &.closed { background: #eceff1; color: #546e7a; }
@@ -447,8 +445,7 @@ export class IncidentsComponent implements OnInit {
 
   formatStatus(status: string): string {
     const statusMap: Record<string, string> = {
-      'New': 'New',
-      'Assigned': 'Assigned',
+      'Open': 'Open',
       'InProgress': 'In Progress',
       'Resolved': 'Resolved',
       'Closed': 'Closed'

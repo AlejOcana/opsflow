@@ -4,19 +4,19 @@ import { Observable, tap } from 'rxjs';
 
 export interface AuthResponse {
   token: string;
-  user: UserInfo;
+  userId: number;
+  username: string;
+  email: string;
+  fullName: string;
+  role: number;
 }
 
 export interface UserInfo {
   id: string;
   email: string;
-  firstName: string;
-  lastName: string;
+  fullName: string;
   role: string;
-  organizationId: string;
-  organizationName: string;
-  teamId?: string;
-  teamName?: string;
+  username: string;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -32,11 +32,17 @@ export class AuthService {
   }
 
   private loadStoredAuth() {
-    const token = localStorage.getItem('token');
-    const userStr = localStorage.getItem('user');
-    if (token && userStr) {
-      this.isAuthenticated.set(true);
-      this.currentUser.set(JSON.parse(userStr));
+    try {
+      const token = localStorage.getItem('token');
+      const userStr = localStorage.getItem('user');
+      if (token && userStr) {
+        const user = JSON.parse(userStr);
+        this.isAuthenticated.set(true);
+        this.currentUser.set(user);
+      }
+    } catch (e) {
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
     }
   }
 
@@ -44,9 +50,22 @@ export class AuthService {
     return this.http.post<AuthResponse>(`${AuthService.API_URL}/auth/login`, { email, password })
       .pipe(
         tap(response => {
+          const roleMap: Record<number, string> = {
+            0: 'User',
+            1: 'Operator',
+            2: 'Manager',
+            3: 'Admin'
+          };
+          const user: UserInfo = {
+            id: response.userId.toString(),
+            email: response.email,
+            fullName: response.fullName,
+            role: roleMap[response.role] || 'User',
+            username: response.username
+          };
           localStorage.setItem('token', response.token);
-          localStorage.setItem('user', JSON.stringify(response.user));
-          this.currentUser.set(response.user);
+          localStorage.setItem('user', JSON.stringify(user));
+          this.currentUser.set(user);
           this.isAuthenticated.set(true);
         })
       );
@@ -64,8 +83,14 @@ export class AuthService {
   }
 
   getUser(): UserInfo | null {
-    const userStr = localStorage.getItem('user');
-    return userStr ? JSON.parse(userStr) : null;
+    try {
+      const userStr = localStorage.getItem('user');
+      return userStr ? JSON.parse(userStr) : null;
+    } catch (e) {
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      return null;
+    }
   }
 
   hasRole(roles: string[]): boolean {
