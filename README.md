@@ -22,7 +22,7 @@ Engineering teams need structured incident tracking without enterprise tool comp
 | ORM | Entity Framework Core 8 |
 | Database | PostgreSQL |
 | Auth | JWT Bearer |
-| Frontend | Angular 17 (standalone components) |
+| Frontend | Angular 21 (standalone components + signals) |
 | UI | Angular Material |
 | Infra | Docker + Docker Compose |
 
@@ -53,7 +53,7 @@ Incident (1) ───< (N) AuditLog
 
 ### Workflow States
 ```
-New → Assigned → InProgress → Resolved → Closed
+Open → InProgress → Resolved → Closed
 ```
 
 ### Role Permissions
@@ -112,9 +112,9 @@ cd opsflow-web && pnpm start
 
 ### Demo Credentials
 ```
-admin@opsflow.io / admin123
-manager@opsflow.io / manager123  
-dev@opsflow.io / dev123
+Admin:  admin@opsflow.io / Admin123!
+Manager: platformmgr@opsflow.io / Manager123!
+Operator: dev1@opsflow.io / Developer123!
 ```
 
 ## Environment Variables
@@ -174,7 +174,7 @@ This project showcases senior-level competencies:
 - DTOs for request/response
 
 ### Full-Stack
-- Angular 17 with standalone components
+- Angular 21 with standalone components and signals
 - Signal-based reactivity
 - Service layer pattern
 - HTTP interceptors
