@@ -4,6 +4,7 @@ import { MatCardModule } from '@angular/material/card';
 import { MatListModule } from '@angular/material/list';
 import { MatIconModule } from '@angular/material/icon';
 import { HttpClient } from '@angular/common/http';
+import { environment } from '../../../environments/environment';
 
 @Component({
   selector: 'app-teams',
@@ -234,7 +235,7 @@ export class TeamsComponent implements OnInit {
   constructor(private http: HttpClient) {}
 
   ngOnInit() {
-    this.http.get<any[]>('/api/teams').subscribe({
+    this.http.get<any[]>(`${environment.apiUrl}/teams`).subscribe({
       next: (teams) => this.teams.set(teams)
     });
   }

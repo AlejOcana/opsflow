@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams, HttpHeaders } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { environment } from '../../../environments/environment';
 
 export interface UserSummary {
   id: string;
@@ -56,7 +57,7 @@ export interface UpdateIncidentRequest {
 
 @Injectable({ providedIn: 'root' })
 export class IncidentService {
-  private readonly API_URL = '/api';
+  private readonly API_URL = environment.apiUrl;
 
   constructor(private http: HttpClient) {}
 

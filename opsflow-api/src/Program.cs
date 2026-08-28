@@ -43,6 +43,7 @@ builder.Services.AddDbContext<OpsFlowDbContext>(options =>
 var jwtKey = builder.Configuration["Jwt:Key"];
 var jwtIssuer = builder.Configuration["Jwt:Issuer"];
 var jwtAudience = builder.Configuration["Jwt:Audience"];
+if (string.IsNullOrEmpty(jwtKey)) throw new InvalidOperationException("Jwt:Key missing");
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
@@ -76,6 +77,8 @@ builder.Services.AddScoped<ITeamService, TeamService>();
 builder.Services.AddScoped<IDashboardService, DashboardService>();
 
 // Configure CORS
+// AllowAll is permissive for local dev / demo; in production restrict via env var CORS__AllowedOrigins (or CORS_ALLOWED_ORIGINS)
+// Example: CORS__AllowedOrigins=https://opsflow.example.com,https://admin.opsflow.example.com
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAll", policy =>
@@ -84,24 +87,51 @@ builder.Services.AddCors(options =>
               .AllowAnyMethod()
               .AllowAnyHeader();
     });
+
+    // Optionally register a restrictive policy if env var is set — keep AllowAll for backwards compat
+    var corsOrigins = builder.Configuration["CORS:AllowedOrigins"]
+        ?? Environment.GetEnvironmentVariable("CORS_ALLOWED_ORIGINS")
+        ?? Environment.GetEnvironmentVariable("CORS__AllowedOrigins");
+    if (!string.IsNullOrWhiteSpace(corsOrigins))
+    {
+        var origins = corsOrigins.Split(new[] { ',', ';' }, StringSplitOptions.RemoveEmptyEntries)
+                                 .Select(o => o.Trim())
+                                 .ToArray();
+        if (origins.Length > 0)
+        {
+            options.AddPolicy("Restricted", policy =>
+            {
+                policy.WithOrigins(origins)
+                      .AllowAnyMethod()
+                      .AllowAnyHeader()
+                      .AllowCredentials();
+            });
+        }
+    }
 });
 
 var app = builder.Build();
 
 // Configure the HTTP request pipeline
-if (app.Environment.IsDevelopment())
+// Enable Swagger in Development and Production for Render demo (previously IsDevelopment only)
+if (app.Environment.IsDevelopment() || app.Environment.IsProduction())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
 }
 
-app.UseCors("AllowAll");
+var corsOriginsForUse = app.Configuration["CORS:AllowedOrigins"]
+    ?? Environment.GetEnvironmentVariable("CORS_ALLOWED_ORIGINS")
+    ?? Environment.GetEnvironmentVariable("CORS__AllowedOrigins");
+app.UseCors(!string.IsNullOrWhiteSpace(corsOriginsForUse) ? "Restricted" : "AllowAll");
 
 // Use custom exception middleware
 app.UseExceptionMiddleware();
 
 app.UseAuthentication();
 app.UseAuthorization();
+
+app.MapGet("/health", () => Results.Ok(new { status = "healthy" }));
 
 app.MapControllers();
 

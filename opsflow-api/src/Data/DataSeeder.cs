@@ -76,7 +76,7 @@ public static class DataSeeder
 
         var infraManager = new User
         {
-            Username = " inframgr",
+            Username = "inframgr",
             Email = "inframgr@opsflow.io",
             PasswordHash = BCrypt.Net.BCrypt.HashPassword("Manager123!"),
             FullName = "Carol Infra",

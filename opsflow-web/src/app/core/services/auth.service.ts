@@ -1,6 +1,7 @@
 import { Injectable, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, tap } from 'rxjs';
+import { environment } from '../../../environments/environment';
 
 export interface AuthResponse {
   token: string;
@@ -21,8 +22,8 @@ export interface UserInfo {
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
-  // Shared API base URL - use this for all API calls to ensure consistency
-  static readonly API_URL = '/api';
+  // Shared API base URL from environment — supports split deploy (Vercel + Render)
+  static readonly API_URL = environment.apiUrl;
   
   currentUser = signal<UserInfo | null>(null);
   isAuthenticated = signal(false);

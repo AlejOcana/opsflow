@@ -5,6 +5,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 import { RouterLink } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
+import { environment } from '../../../environments/environment';
 
 interface Stats {
   totalIncidents: number;
@@ -238,7 +239,7 @@ export class DashboardComponent implements OnInit {
     const token = localStorage.getItem('token');
     const headers = { Authorization: `Bearer ${token}` };
 
-    this.http.get<Stats>('/api/dashboard/stats', { headers }).subscribe({
+    this.http.get<Stats>(`${environment.apiUrl}/dashboard/stats`, { headers }).subscribe({
       next: (data) => this.stats.set(data),
       error: () => {}
     });

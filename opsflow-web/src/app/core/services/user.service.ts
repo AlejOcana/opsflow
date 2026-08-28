@@ -1,7 +1,7 @@
 import { Injectable, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, tap } from 'rxjs';
-import { AuthService } from './auth.service';
+import { environment } from '../../../environments/environment';
 
 export interface User {
   id: string;
@@ -30,8 +30,7 @@ export interface TeamMember {
 
 @Injectable({ providedIn: 'root' })
 export class UserService {
-  // Use AuthService.API_URL for consistency with other services
-  private readonly API_URL = AuthService.API_URL;
+  private readonly API_URL = environment.apiUrl;
 
   constructor(private http: HttpClient) {}
 
