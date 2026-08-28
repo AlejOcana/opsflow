@@ -1,0 +1,61 @@
+# Render Blueprint for OpsFlow — API on Render, DB on Neon (external)
+# Docs: https://render.com/docs/blueprint-spec
+# Deploy order: Neon (create project) -> Render (api) -> Vercel (web)
+# See docs/DEPLOY.md for step-by-step Neon + Render setup.
+
+services:
+  - type: web
+    name: opsflow-api
+    runtime: docker
+    plan: free
+    # Docker build from opsflow-api folder
+    dockerfilePath: ./opsflow-api/Dockerfile
+    dockerContext: ./opsflow-api
+    healthCheckPath: /health
+    autoDeploy: false
+    # Render injects PORT=10000 automatically; app must listen on $PORT.
+    # Program.cs reads PORT env and falls back to 5000 locally.
+    envVars:
+      - key: ASPNETCORE_ENVIRONMENT
+        value: Production
+      - key: ASPNETCORE_URLS
+        value: http://+:10000
+      # Neon pooled connection string — set sync:false and fill in Render dashboard.
+      # Format (pooled, for serverless): Host=ep-xxx-pooler.c-2.us-east-2.aws.neon.tech;Port=5432;Database=neondb;Username=neondb_owner;Password=YOUR_PASSWORD;SslMode=Require;ChannelBinding=Require
+      # Neon also provides DATABASE_URL style: postgresql://user:pass@ep-xxx-pooler.region.aws.neon.tech/neondb?sslmode=require&channel_binding=require
+      - key: ConnectionStrings__DefaultConnection
+        sync: false
+      - key: Jwt__Key
+        # Generate: openssl rand -base64 32  (44 chars). Mark sync:false so you set a real secret in dashboard.
+        # Alternative: use generateValue: true to auto-generate on first deploy.
+        sync: false
+      - key: Jwt__Issuer
+        value: OpsFlow.Api
+      - key: Jwt__Audience
+        value: OpsFlow.Api
+      - key: Jwt__ExpiryMinutes
+        value: 60
+      # CORS — production origins only; keep comma-separated no spaces
+      - key: CORS__AllowedOrigins
+        value: https://opsflow.alejocana.es,https://opsflow-web.vercel.app
+      # Optional alias for CORS (both forms are read in Program.cs)
+      - key: CORS_ALLOWED_ORIGINS
+        value: https://opsflow.alejocana.es,https://opsflow-web.vercel.app
+
+# Alternative: Render-managed Postgres (free tier, 90-day expiry). Uncomment to use instead of Neon.
+# To use: uncomment below, then change ConnectionStrings__DefaultConnection to fromDatabase:
+#   - key: ConnectionStrings__DefaultConnection
+#     fromDatabase:
+#       name: opsflow-db
+#       property: connectionString
+#
+# databases:
+#   - name: opsflow-db
+#     plan: free
+#     databaseName: opsflow
+#     user: opsflow
+
+# Notes:
+# - Do NOT commit secrets. Set ConnectionStrings__DefaultConnection and Jwt__Key in Render dashboard > Environment.
+# - After first deploy, verify https://opsflow-api.onrender.com/health returns {"status":"healthy"} and /swagger is available.
+# - Free tier sleeps after 15m; first request after sleep may take ~30s (cold start).

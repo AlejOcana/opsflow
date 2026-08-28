@@ -14,6 +14,7 @@ import { MatChipsModule } from '@angular/material/chips';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatPaginatorModule } from '@angular/material/paginator';
 import { IncidentService, IncidentList } from '../../core/services/incident.service';
+import { AuthService } from '../../core/services/auth.service';
 
 @Component({
   selector: 'app-incidents',
@@ -41,10 +42,12 @@ import { IncidentService, IncidentList } from '../../core/services/incident.serv
           <h1>Incidents</h1>
           <span class="incident-count">{{ incidents().length }} total</span>
         </div>
-        <button mat-raised-button color="primary" routerLink="/incidents/new" class="new-button">
-          <mat-icon>add</mat-icon>
-          <span class="button-text">New Incident</span>
-        </button>
+        @if (auth.canCreate()) {
+          <button mat-raised-button color="primary" routerLink="/incidents/new" class="new-button">
+            <mat-icon>add</mat-icon>
+            <span class="button-text">New Incident</span>
+          </button>
+        }
       </div>
 
       <mat-card class="filters-card">
@@ -87,10 +90,14 @@ import { IncidentService, IncidentList } from '../../core/services/incident.serv
           <mat-icon>inbox</mat-icon>
           <h3>No incidents found</h3>
           <p>{{ filters.search || filters.status ? 'Try adjusting your filters' : 'Get started by creating a new incident' }}</p>
-          <button mat-raised-button color="primary" routerLink="/incidents/new">
-            <mat-icon>add</mat-icon>
-            Create Incident
-          </button>
+          @if (auth.canCreate()) {
+            <button mat-raised-button color="primary" routerLink="/incidents/new">
+              <mat-icon>add</mat-icon>
+              Create Incident
+            </button>
+          } @else {
+            <small style="color: rgba(0,0,0,0.45)">Viewers cannot create incidents</small>
+          }
         </mat-card>
       } @else {
         <div class="table-container">
@@ -414,7 +421,7 @@ export class IncidentsComponent implements OnInit {
     search: ''
   };
 
-  constructor(private incidentService: IncidentService) {}
+  constructor(private incidentService: IncidentService, public auth: AuthService) {}
 
   ngOnInit() {
     this.loadIncidents();

@@ -3,6 +3,54 @@ import { HttpClient, HttpParams, HttpHeaders } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
 
+export interface TimelineEntryDto {
+  type: 'comment' | 'audit' | 'status' | 'attachment' | string;
+  at: string;
+  actor: string;
+  content: string;
+  metadata?: Record<string, any> | null;
+  // backend may send PascalCase
+  Type?: string;
+  At?: string;
+  Actor?: string;
+  Content?: string;
+  Metadata?: Record<string, any> | null;
+}
+
+export interface AttachmentDto {
+  id: number;
+  incidentId: number;
+  fileName: string;
+  contentType: string;
+  url: string;
+  uploadedById: number;
+  uploadedByName: string;
+  uploadedAt: string;
+  sizeBytes: number;
+  // backend PascalCase variants
+  Id?: number;
+  IncidentId?: number;
+  FileName?: string;
+  ContentType?: string;
+  Url?: string;
+  UploadedById?: number;
+  UploadedByName?: string;
+  UploadedAt?: string;
+  SizeBytes?: number;
+}
+
+export interface CreateAttachmentRequest {
+  fileName: string;
+  url: string;
+  contentType?: string;
+  sizeBytes?: number;
+  // also support PascalCase for API
+  FileName?: string;
+  Url?: string;
+  ContentType?: string;
+  SizeBytes?: number;
+}
+
 export interface UserSummary {
   id: string;
   email: string;
@@ -109,6 +157,52 @@ export class IncidentService {
 
   addComment(incidentId: string, content: string): Observable<any> {
     return this.http.post<any>(`${this.API_URL}/incidents/${incidentId}/comments`, { content }, {
+      headers: this.getHeaders()
+    });
+  }
+
+  // Phase 2: Timeline
+  getTimeline(incidentId: string): Observable<TimelineEntryDto[]> {
+    return this.http.get<TimelineEntryDto[]>(`${this.API_URL}/incidents/${incidentId}/timeline`, {
+      headers: this.getHeaders()
+    });
+  }
+
+  // Phase 2: Attachments
+  getAttachments(incidentId: string): Observable<AttachmentDto[]> {
+    return this.http.get<AttachmentDto[]>(`${this.API_URL}/incidents/${incidentId}/attachments`, {
+      headers: this.getHeaders()
+    });
+  }
+
+  createAttachment(incidentId: string, data: CreateAttachmentRequest): Observable<AttachmentDto> {
+    // API expects PascalCase but also handles camelCase via JSON; send PascalCase for safety
+    const payload: any = {
+      FileName: data.fileName ?? (data as any).FileName,
+      Url: data.url ?? (data as any).Url,
+      ContentType: data.contentType ?? (data as any).ContentType ?? null,
+      SizeBytes: data.sizeBytes ?? (data as any).SizeBytes ?? null
+    };
+    return this.http.post<AttachmentDto>(`${this.API_URL}/incidents/${incidentId}/attachments`, payload, {
+      headers: this.getHeaders()
+    });
+  }
+
+  deleteAttachment(incidentId: string, attachmentId: number): Observable<void> {
+    return this.http.delete<void>(`${this.API_URL}/incidents/${incidentId}/attachments/${attachmentId}`, {
+      headers: this.getHeaders()
+    });
+  }
+
+  assignIncident(incidentId: string, assigneeId: number | string): Observable<IncidentDetail> {
+    const payload = { assigneeId: typeof assigneeId === 'string' ? parseInt(assigneeId as string, 10) : assigneeId };
+    return this.http.patch<IncidentDetail>(`${this.API_URL}/incidents/${incidentId}/assign`, payload, {
+      headers: this.getHeaders()
+    });
+  }
+
+  updateStatus(incidentId: string, status: string): Observable<IncidentDetail> {
+    return this.http.patch<IncidentDetail>(`${this.API_URL}/incidents/${incidentId}/status`, { status }, {
       headers: this.getHeaders()
     });
   }

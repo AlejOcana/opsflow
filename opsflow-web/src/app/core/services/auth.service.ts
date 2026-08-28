@@ -98,4 +98,38 @@ export class AuthService {
     const user = this.getUser();
     return user ? roles.includes(user.role) : false;
   }
+
+  // RBAC helpers for UI hiding (frontend only, not security enforcement)
+  getRole(): string | null {
+    return this.currentUser()?.role ?? this.getUser()?.role ?? null;
+  }
+
+  isViewer(): boolean {
+    return this.getRole() === 'User';
+  }
+
+  canCreate(): boolean {
+    const r = this.getRole();
+    return r === 'Admin' || r === 'Manager' || r === 'Operator';
+  }
+
+  canAssign(): boolean {
+    const r = this.getRole();
+    return r === 'Admin' || r === 'Manager';
+  }
+
+  canDelete(): boolean {
+    const r = this.getRole();
+    return r === 'Admin' || r === 'Manager';
+  }
+
+  canDeleteAttachment(): boolean {
+    const r = this.getRole();
+    return r === 'Admin' || r === 'Manager';
+  }
+
+  canUploadAttachment(): boolean {
+    const r = this.getRole();
+    return r === 'Admin' || r === 'Manager' || r === 'Operator';
+  }
 }

@@ -15,6 +15,8 @@ public class OpsFlowDbContext : DbContext
     public DbSet<Incident> Incidents => Set<Incident>();
     public DbSet<Comment> Comments => Set<Comment>();
     public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
+    public DbSet<IncidentAttachment> IncidentAttachments => Set<IncidentAttachment>();
+    public DbSet<Notification> Notifications => Set<Notification>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -119,6 +121,45 @@ public class OpsFlowDbContext : DbContext
                   .WithMany(u => u.AuditLogs)
                   .HasForeignKey(e => e.UserId)
                   .OnDelete(DeleteBehavior.Restrict);
+            entity.HasIndex(e => e.CreatedAt);
+        });
+
+        // IncidentAttachment entity configuration
+        modelBuilder.Entity<IncidentAttachment>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.FileName).IsRequired().HasMaxLength(255);
+            entity.Property(e => e.ContentType).IsRequired().HasMaxLength(100);
+            entity.Property(e => e.Url).IsRequired().HasMaxLength(100000);
+            entity.HasOne(e => e.Incident)
+                  .WithMany(i => i.Attachments)
+                  .HasForeignKey(e => e.IncidentId)
+                  .OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(e => e.UploadedBy)
+                  .WithMany(u => u.UploadedAttachments)
+                  .HasForeignKey(e => e.UploadedById)
+                  .OnDelete(DeleteBehavior.Restrict);
+            entity.HasIndex(e => e.IncidentId);
+            entity.HasIndex(e => e.UploadedAt);
+        });
+
+        // Notification entity configuration
+        modelBuilder.Entity<Notification>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Title).IsRequired().HasMaxLength(255);
+            entity.Property(e => e.Message).IsRequired().HasMaxLength(1000);
+            entity.Property(e => e.Type).IsRequired();
+            entity.HasOne(e => e.User)
+                  .WithMany(u => u.Notifications)
+                  .HasForeignKey(e => e.UserId)
+                  .OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(e => e.Incident)
+                  .WithMany()
+                  .HasForeignKey(e => e.IncidentId)
+                  .OnDelete(DeleteBehavior.SetNull);
+            entity.HasIndex(e => e.UserId);
+            entity.HasIndex(e => e.IsRead);
             entity.HasIndex(e => e.CreatedAt);
         });
     }

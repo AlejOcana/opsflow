@@ -1,8 +1,16 @@
 import { test, expect } from '@playwright/test';
+import { mockAuthRoutes, mockDashboardStats, mockIncidentsRoutes } from './helpers';
 
 test.describe('Login Flow', () => {
   test.beforeEach(async ({ page }) => {
+    // Mock auth so tests are not flaky when API is down; still validates UI behavior
+    await mockAuthRoutes(page);
+    await mockDashboardStats(page);
+    await mockIncidentsRoutes(page);
+    await page.route('**/api/notifications*', async (r) => r.fulfill({ status: 200, contentType: 'application/json', body: '[]' }));
+    await page.route('**/api/notifications/unread-count', async (r) => r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ count: 0 }) }));
     await page.goto('/login');
+    await page.waitForLoadState('networkidle');
   });
 
   test('should display login form with title', async ({ page }) => {
@@ -27,16 +35,15 @@ test.describe('Login Flow', () => {
   test('should login with demo admin credentials', async ({ page }) => {
     await page.click('button:has-text("Admin")');
     await expect(page.locator('input[name="email"]')).toHaveValue('admin@opsflow.io');
-    await expect(page.locator('input[name="password"]')).toHaveValue('admin123');
+    await expect(page.locator('input[name="password"]')).toHaveValue('Admin123!');
   });
 
   test('should login and redirect to dashboard', async ({ page }) => {
     await page.click('button:has-text("Admin")');
     await page.click('button[type="submit"]');
-    
     // Wait for navigation to dashboard
     await expect(page).toHaveURL('/dashboard', { timeout: 15000 });
-    await expect(page.locator('h1')).toContainText('Dashboard');
+    await expect(page.locator('h1')).toContainText('Dashboard', { timeout: 10000 });
   });
 });
 

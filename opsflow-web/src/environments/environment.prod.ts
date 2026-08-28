@@ -3,11 +3,13 @@
  * This file replaces environment.ts during production builds via fileReplacements
  * in angular.json.
  *
- * apiUrl points to the deployed Render API. Override after deploy by updating
- * this file or by injecting via Vercel env var (e.g. VITE_API_URL / API_URL)
- * and regenerating this file at build time.
+ * apiUrl points to the deployed Render API.
+ * Default: https://opsflow-api.onrender.com/api — replace with your actual Render URL after deploy,
+ * e.g. https://opsflow-api-xxxx.onrender.com/api (see docs/DEPLOY.md and render.yaml).
+ * Alternatively inject via Vercel env var API_URL and regenerate this file at build time.
+ * TODO: Replace the placeholder below with your real Render service URL after `render.yaml` deploy.
  */
 export const environment = {
   production: true,
-  apiUrl: 'https://opsflow-api.onrender.com/api'
+  apiUrl: 'https://opsflow-api.onrender.com/api' // <-- replace with actual Render URL after deploy
 };

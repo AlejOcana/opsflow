@@ -318,11 +318,12 @@ public class CommentRepository : ICommentRepository
     }
 
     public async Task<Comment?> GetByIdAsync(int id)
-        => await _context.Comments.FindAsync(id);
+        => await _context.Comments.Include(c => c.Author).FirstOrDefaultAsync(c => c.Id == id);
 
     public async Task<IEnumerable<Comment>> GetByIncidentAsync(int incidentId)
         => await _context.Comments
             .Where(c => c.IncidentId == incidentId && !c.IsDeleted)
+            .Include(c => c.Author)
             .OrderBy(c => c.CreatedAt)
             .ToListAsync();
 
@@ -377,6 +378,7 @@ public class AuditLogRepository : IAuditLogRepository
     public async Task<IEnumerable<AuditLog>> GetByEntityAsync(string entityType, int entityId)
         => await _context.AuditLogs
             .Where(a => a.EntityType == entityType && a.EntityId == entityId)
+            .Include(a => a.User)
             .OrderByDescending(a => a.CreatedAt)
             .ToListAsync();
 
@@ -385,5 +387,92 @@ public class AuditLogRepository : IAuditLogRepository
         _context.AuditLogs.Add(auditLog);
         await _context.SaveChangesAsync();
         return auditLog;
+    }
+}
+
+public class IncidentAttachmentRepository : IIncidentAttachmentRepository
+{
+    private readonly OpsFlowDbContext _context;
+
+    public IncidentAttachmentRepository(OpsFlowDbContext context)
+    {
+        _context = context;
+    }
+
+    public async Task<IncidentAttachment?> GetByIdAsync(int id)
+        => await _context.IncidentAttachments
+            .Include(a => a.UploadedBy)
+            .FirstOrDefaultAsync(a => a.Id == id);
+
+    public async Task<IEnumerable<IncidentAttachment>> GetByIncidentAsync(int incidentId)
+        => await _context.IncidentAttachments
+            .Where(a => a.IncidentId == incidentId)
+            .Include(a => a.UploadedBy)
+            .OrderBy(a => a.UploadedAt)
+            .ToListAsync();
+
+    public async Task<IncidentAttachment> AddAsync(IncidentAttachment attachment)
+    {
+        _context.IncidentAttachments.Add(attachment);
+        await _context.SaveChangesAsync();
+        return attachment;
+    }
+
+    public async Task<bool> DeleteAsync(int id)
+    {
+        var attachment = await _context.IncidentAttachments.FindAsync(id);
+        if (attachment == null) return false;
+        _context.IncidentAttachments.Remove(attachment);
+        await _context.SaveChangesAsync();
+        return true;
+    }
+
+    public async Task<bool> ExistsAsync(int id)
+        => await _context.IncidentAttachments.AnyAsync(a => a.Id == id);
+}
+
+public class NotificationRepository : INotificationRepository
+{
+    private readonly OpsFlowDbContext _context;
+
+    public NotificationRepository(OpsFlowDbContext context)
+    {
+        _context = context;
+    }
+
+    public async Task<Notification?> GetByIdAsync(int id)
+        => await _context.Notifications.FindAsync(id);
+
+    public async Task<IEnumerable<Notification>> GetByUserAsync(int userId, int page, int pageSize)
+        => await _context.Notifications
+            .Where(n => n.UserId == userId)
+            .OrderByDescending(n => n.CreatedAt)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .ToListAsync();
+
+    public async Task<int> GetUnreadCountAsync(int userId)
+        => await _context.Notifications.CountAsync(n => n.UserId == userId && !n.IsRead);
+
+    public async Task<Notification> AddAsync(Notification notification)
+    {
+        _context.Notifications.Add(notification);
+        await _context.SaveChangesAsync();
+        return notification;
+    }
+
+    public async Task<Notification> UpdateAsync(Notification notification)
+    {
+        _context.Notifications.Update(notification);
+        await _context.SaveChangesAsync();
+        return notification;
+    }
+
+    public async Task<bool> MarkAllReadAsync(int userId)
+    {
+        var unread = await _context.Notifications.Where(n => n.UserId == userId && !n.IsRead).ToListAsync();
+        foreach (var n in unread) n.IsRead = true;
+        if (unread.Count > 0) await _context.SaveChangesAsync();
+        return true;
     }
 }

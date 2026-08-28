@@ -68,12 +68,48 @@ public record CreateCommentRequest(int IncidentId, string Content);
 public record UpdateCommentRequest(string Content);
 public record CommentDto(int Id, string Content, int IncidentId, int AuthorId, string AuthorName, DateTime CreatedAt, bool IsDeleted);
 
-// Dashboard DTOs
-public record DashboardStatsDto(int TotalIncidents, int OpenIncidents, int InProgressIncidents, int ResolvedIncidents, int ClosedIncidents, int CriticalCount, int HighCount, int MediumCount, int LowCount, int TotalUsers, int TotalTeams, int TotalOrganizations);
 public record IncidentTrendDto(DateTime Date, int Count);
 
 // Audit Log DTOs
 public record AuditLogDto(int Id, string Action, string EntityType, int EntityId, string? OldValue, string? NewValue, int UserId, string UserName, DateTime CreatedAt);
+
+// Timeline DTOs
+public record TimelineEntryDto(string Type, DateTime At, string Actor, string Content, Dictionary<string, object?>? Metadata);
+
+// Attachment DTOs
+public record CreateAttachmentRequest(string FileName, string Url, string? ContentType = null, long? SizeBytes = null);
+public record AttachmentDto(int Id, int IncidentId, string FileName, string ContentType, string Url, int UploadedById, string UploadedByName, DateTime UploadedAt, long SizeBytes);
+
+// Notification DTOs
+public record NotificationDto(int Id, int UserId, int? IncidentId, string Type, string Title, string Message, bool IsRead, DateTime CreatedAt);
+public record CreateNotificationRequest(int UserId, int? IncidentId, string Type, string Title, string Message);
+
+// Dashboard Extended DTOs
+public record SeverityGroupDto(string Severity, int Count);
+public record OpenBySeverityDto(string Severity, int Count);
+public record ThroughputDto(DateTime Date, int Count);
+
+// Extended Dashboard Stats (additive: keeps original fields + new KPIs)
+public record DashboardStatsDto(
+    int TotalIncidents,
+    int OpenIncidents,
+    int InProgressIncidents,
+    int ResolvedIncidents,
+    int ClosedIncidents,
+    int CriticalCount,
+    int HighCount,
+    int MediumCount,
+    int LowCount,
+    int TotalUsers,
+    int TotalTeams,
+    int TotalOrganizations,
+    // Phase 2 additive fields with defaults for backward compat
+    IEnumerable<OpenBySeverityDto>? OpenBySeverity = null,
+    double MtbfHours = 0,
+    double LeadTimeAvgDays = 0,
+    int SlaAtRisk = 0,
+    IEnumerable<IncidentTrendDto>? ThroughputLast7Days = null
+);
 
 // Pagination
 public record PagedResult<T>(IEnumerable<T> Items, int TotalCount, int Page, int PageSize, int TotalPages);

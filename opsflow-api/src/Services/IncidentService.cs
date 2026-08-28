@@ -18,6 +18,11 @@ public interface IIncidentService
     Task<IncidentDto?> UpdateAsync(int id, UpdateIncidentRequest request, int userId);
     Task<bool> DeleteAsync(int id);
     Task<int> GetCountAsync(int organizationId);
+    // Phase 2
+    Task<IncidentDto?> AssignAsync(int incidentId, int assigneeId, int actorUserId);
+    Task<IncidentDto?> UpdateStatusAsync(int incidentId, IncidentStatus newStatus, int actorUserId);
+    Task<CommentDto> AddCommentAsync(int incidentId, string content, int authorId);
+    Task<IEnumerable<CommentDto>> GetCommentsAsync(int incidentId);
 }
 
 public class IncidentService : IIncidentService
@@ -26,17 +31,26 @@ public class IncidentService : IIncidentService
     private readonly IUserRepository _userRepository;
     private readonly ITeamRepository _teamRepository;
     private readonly IOrganizationRepository _organizationRepository;
+    private readonly ICommentRepository _commentRepository;
+    private readonly IAuditLogRepository _auditLogRepository;
+    private readonly INotificationRepository _notificationRepository;
 
     public IncidentService(
         IIncidentRepository incidentRepository,
         IUserRepository userRepository,
         ITeamRepository teamRepository,
-        IOrganizationRepository organizationRepository)
+        IOrganizationRepository organizationRepository,
+        ICommentRepository commentRepository,
+        IAuditLogRepository auditLogRepository,
+        INotificationRepository notificationRepository)
     {
         _incidentRepository = incidentRepository;
         _userRepository = userRepository;
         _teamRepository = teamRepository;
         _organizationRepository = organizationRepository;
+        _commentRepository = commentRepository;
+        _auditLogRepository = auditLogRepository;
+        _notificationRepository = notificationRepository;
     }
 
     public async Task<IncidentDetailDto?> GetByIdAsync(int id)
@@ -114,6 +128,33 @@ public class IncidentService : IIncidentService
         };
 
         var created = await _incidentRepository.AddAsync(incident);
+
+        await _auditLogRepository.AddAsync(new AuditLog
+        {
+            Action = "Created",
+            EntityType = "Incident",
+            EntityId = created.Id,
+            OldValue = null,
+            NewValue = created.Title,
+            UserId = reporterId,
+            CreatedAt = DateTime.UtcNow
+        });
+
+        // Notify assignee if assigned on creation
+        if (created.AssigneeId.HasValue && created.AssigneeId.Value != reporterId)
+        {
+            await _notificationRepository.AddAsync(new Notification
+            {
+                UserId = created.AssigneeId.Value,
+                IncidentId = created.Id,
+                Type = NotificationType.Assigned,
+                Title = "Incident assigned to you",
+                Message = $"You have been assigned to incident #{created.Id}: {created.Title}",
+                IsRead = false,
+                CreatedAt = DateTime.UtcNow
+            });
+        }
+
         return MapToDto(created);
     }
 
@@ -121,6 +162,9 @@ public class IncidentService : IIncidentService
     {
         var incident = await _incidentRepository.GetByIdWithDetailsAsync(id);
         if (incident == null) return null;
+
+        var oldStatus = incident.Status;
+        var oldAssignee = incident.AssigneeId;
 
         if (!string.IsNullOrEmpty(request.Title))
             incident.Title = request.Title;
@@ -142,7 +186,200 @@ public class IncidentService : IIncidentService
             incident.AssigneeId = request.AssigneeId;
 
         var updated = await _incidentRepository.UpdateAsync(incident);
+
+        // Audit & notifications for status change
+        if (request.Status.HasValue && oldStatus != request.Status.Value)
+        {
+            await _auditLogRepository.AddAsync(new AuditLog
+            {
+                Action = "StatusChanged",
+                EntityType = "Incident",
+                EntityId = id,
+                OldValue = oldStatus.ToString(),
+                NewValue = request.Status.Value.ToString(),
+                UserId = userId,
+                CreatedAt = DateTime.UtcNow
+            });
+            // Notify reporter and assignee (if different from actor)
+            var notifyTargets = new HashSet<int>();
+            if (incident.ReporterId != userId) notifyTargets.Add(incident.ReporterId);
+            if (incident.AssigneeId.HasValue && incident.AssigneeId.Value != userId) notifyTargets.Add(incident.AssigneeId.Value);
+            foreach (var uid in notifyTargets)
+            {
+                await _notificationRepository.AddAsync(new Notification
+                {
+                    UserId = uid,
+                    IncidentId = id,
+                    Type = NotificationType.StatusChanged,
+                    Title = "Incident status changed",
+                    Message = $"Incident #{id} status changed from {oldStatus} to {request.Status.Value} by user #{userId}",
+                    IsRead = false,
+                    CreatedAt = DateTime.UtcNow
+                });
+            }
+        }
+        if (request.AssigneeId.HasValue && oldAssignee != request.AssigneeId.Value)
+        {
+            await _auditLogRepository.AddAsync(new AuditLog
+            {
+                Action = "Assigned",
+                EntityType = "Incident",
+                EntityId = id,
+                OldValue = oldAssignee?.ToString(),
+                NewValue = request.AssigneeId.Value.ToString(),
+                UserId = userId,
+                CreatedAt = DateTime.UtcNow
+            });
+            if (request.AssigneeId.Value != userId)
+            {
+                await _notificationRepository.AddAsync(new Notification
+                {
+                    UserId = request.AssigneeId.Value,
+                    IncidentId = id,
+                    Type = NotificationType.Assigned,
+                    Title = "Incident assigned to you",
+                    Message = $"You have been assigned to incident #{id}",
+                    IsRead = false,
+                    CreatedAt = DateTime.UtcNow
+                });
+            }
+        }
+
         return MapToDto(updated);
+    }
+
+    public async Task<IncidentDto?> AssignAsync(int incidentId, int assigneeId, int actorUserId)
+    {
+        var incident = await _incidentRepository.GetByIdWithDetailsAsync(incidentId);
+        if (incident == null) return null;
+        if (!await _userRepository.ExistsAsync(assigneeId)) throw new InvalidOperationException("Assignee not found");
+
+        var oldAssignee = incident.AssigneeId;
+        incident.AssigneeId = assigneeId;
+        var updated = await _incidentRepository.UpdateAsync(incident);
+
+        await _auditLogRepository.AddAsync(new AuditLog
+        {
+            Action = "Assigned",
+            EntityType = "Incident",
+            EntityId = incidentId,
+            OldValue = oldAssignee?.ToString(),
+            NewValue = assigneeId.ToString(),
+            UserId = actorUserId,
+            CreatedAt = DateTime.UtcNow
+        });
+
+        if (assigneeId != actorUserId)
+        {
+            await _notificationRepository.AddAsync(new Notification
+            {
+                UserId = assigneeId,
+                IncidentId = incidentId,
+                Type = NotificationType.Assigned,
+                Title = "Incident assigned to you",
+                Message = $"You have been assigned to incident #{incidentId}: {incident.Title}",
+                IsRead = false,
+                CreatedAt = DateTime.UtcNow
+            });
+        }
+
+        return MapToDto(updated);
+    }
+
+    public async Task<IncidentDto?> UpdateStatusAsync(int incidentId, IncidentStatus newStatus, int actorUserId)
+    {
+        var incident = await _incidentRepository.GetByIdWithDetailsAsync(incidentId);
+        if (incident == null) return null;
+        var oldStatus = incident.Status;
+        if (oldStatus == newStatus) return MapToDto(incident);
+
+        incident.Status = newStatus;
+        if (newStatus == IncidentStatus.Resolved) incident.ResolvedAt = DateTime.UtcNow;
+        else if (newStatus == IncidentStatus.Closed) incident.ClosedAt = DateTime.UtcNow;
+
+        var updated = await _incidentRepository.UpdateAsync(incident);
+
+        await _auditLogRepository.AddAsync(new AuditLog
+        {
+            Action = "StatusChanged",
+            EntityType = "Incident",
+            EntityId = incidentId,
+            OldValue = oldStatus.ToString(),
+            NewValue = newStatus.ToString(),
+            UserId = actorUserId,
+            CreatedAt = DateTime.UtcNow
+        });
+
+        var notifyTargets = new HashSet<int>();
+        if (incident.ReporterId != actorUserId) notifyTargets.Add(incident.ReporterId);
+        if (incident.AssigneeId.HasValue && incident.AssigneeId.Value != actorUserId) notifyTargets.Add(incident.AssigneeId.Value);
+        foreach (var uid in notifyTargets)
+        {
+            await _notificationRepository.AddAsync(new Notification
+            {
+                UserId = uid,
+                IncidentId = incidentId,
+                Type = NotificationType.StatusChanged,
+                Title = "Incident status changed",
+                Message = $"Incident #{incidentId} status changed from {oldStatus} to {newStatus}",
+                IsRead = false,
+                CreatedAt = DateTime.UtcNow
+            });
+        }
+
+        return MapToDto(updated);
+    }
+
+    public async Task<CommentDto> AddCommentAsync(int incidentId, string content, int authorId)
+    {
+        var incident = await _incidentRepository.GetByIdAsync(incidentId) ?? throw new InvalidOperationException("Incident not found");
+        var author = await _userRepository.GetByIdAsync(authorId);
+
+        var comment = new Comment
+        {
+            IncidentId = incidentId,
+            Content = content,
+            AuthorId = authorId,
+            CreatedAt = DateTime.UtcNow
+        };
+        var created = await _commentRepository.AddAsync(comment);
+
+        await _auditLogRepository.AddAsync(new AuditLog
+        {
+            Action = "CommentAdded",
+            EntityType = "Incident",
+            EntityId = incidentId,
+            OldValue = null,
+            NewValue = content.Length > 100 ? content.Substring(0, 100) : content,
+            UserId = authorId,
+            CreatedAt = DateTime.UtcNow
+        });
+
+        // Notify assignee/reporter if not author
+        var notifyTargets = new HashSet<int>();
+        if (incident.ReporterId != authorId) notifyTargets.Add(incident.ReporterId);
+        if (incident.AssigneeId.HasValue && incident.AssigneeId.Value != authorId) notifyTargets.Add(incident.AssigneeId.Value);
+        foreach (var uid in notifyTargets)
+        {
+            await _notificationRepository.AddAsync(new Notification
+            {
+                UserId = uid,
+                IncidentId = incidentId,
+                Type = NotificationType.Comment,
+                Title = "New comment on incident",
+                Message = $"{author?.FullName ?? $"User#{authorId}"} commented on incident #{incidentId}: {content.Substring(0, Math.Min(80, content.Length))}",
+                IsRead = false,
+                CreatedAt = DateTime.UtcNow
+            });
+        }
+
+        return new CommentDto(created.Id, created.Content, created.IncidentId, created.AuthorId, author?.FullName ?? author?.Username ?? $"User#{authorId}", created.CreatedAt, created.IsDeleted);
+    }
+
+    public async Task<IEnumerable<CommentDto>> GetCommentsAsync(int incidentId)
+    {
+        var comments = await _commentRepository.GetByIncidentAsync(incidentId);
+        return comments.Select(c => new CommentDto(c.Id, c.Content, c.IncidentId, c.AuthorId, c.Author?.FullName ?? c.Author?.Username ?? $"User#{c.AuthorId}", c.CreatedAt, c.IsDeleted));
     }
 
     public async Task<bool> DeleteAsync(int id)

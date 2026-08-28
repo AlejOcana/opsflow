@@ -24,3 +24,19 @@ public enum IncidentPriority
     High = 2,
     Critical = 3
 }
+
+public enum NotificationType
+{
+    Assigned = 0,
+    StatusChanged = 1,
+    Comment = 2,
+    Mention = 3
+}
+
+public enum TimelineEntryType
+{
+    Comment = 0,
+    Audit = 1,
+    Status = 2,
+    Attachment = 3
+}

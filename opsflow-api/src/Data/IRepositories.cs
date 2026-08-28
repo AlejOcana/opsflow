@@ -82,3 +82,22 @@ public interface IAuditLogRepository
     Task<IEnumerable<AuditLog>> GetByEntityAsync(string entityType, int entityId);
     Task<AuditLog> AddAsync(AuditLog auditLog);
 }
+
+public interface IIncidentAttachmentRepository
+{
+    Task<IncidentAttachment?> GetByIdAsync(int id);
+    Task<IEnumerable<IncidentAttachment>> GetByIncidentAsync(int incidentId);
+    Task<IncidentAttachment> AddAsync(IncidentAttachment attachment);
+    Task<bool> DeleteAsync(int id);
+    Task<bool> ExistsAsync(int id);
+}
+
+public interface INotificationRepository
+{
+    Task<Notification?> GetByIdAsync(int id);
+    Task<IEnumerable<Notification>> GetByUserAsync(int userId, int page, int pageSize);
+    Task<int> GetUnreadCountAsync(int userId);
+    Task<Notification> AddAsync(Notification notification);
+    Task<Notification> UpdateAsync(Notification notification);
+    Task<bool> MarkAllReadAsync(int userId);
+}

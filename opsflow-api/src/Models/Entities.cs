@@ -20,6 +20,8 @@ public class User
     public ICollection<Incident> Incidents { get; set; } = new List<Incident>();
     public ICollection<Comment> Comments { get; set; } = new List<Comment>();
     public ICollection<AuditLog> AuditLogs { get; set; } = new List<AuditLog>();
+    public ICollection<Notification> Notifications { get; set; } = new List<Notification>();
+    public ICollection<IncidentAttachment> UploadedAttachments { get; set; } = new List<IncidentAttachment>();
 }
 
 public class Organization
@@ -73,6 +75,7 @@ public class Incident
     public DateTime? ClosedAt { get; set; }
     public ICollection<Comment> Comments { get; set; } = new List<Comment>();
     public ICollection<AuditLog> AuditLogs { get; set; } = new List<AuditLog>();
+    public ICollection<IncidentAttachment> Attachments { get; set; } = new List<IncidentAttachment>();
 }
 
 public class Comment
@@ -98,5 +101,33 @@ public class AuditLog
     public string? NewValue { get; set; }
     public int UserId { get; set; }
     public User User { get; set; } = null!;
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+}
+
+public class IncidentAttachment
+{
+    public int Id { get; set; }
+    public int IncidentId { get; set; }
+    public Incident Incident { get; set; } = null!;
+    public string FileName { get; set; } = string.Empty;
+    public string ContentType { get; set; } = string.Empty;
+    public string Url { get; set; } = string.Empty;
+    public int UploadedById { get; set; }
+    public User UploadedBy { get; set; } = null!;
+    public DateTime UploadedAt { get; set; } = DateTime.UtcNow;
+    public long SizeBytes { get; set; }
+}
+
+public class Notification
+{
+    public int Id { get; set; }
+    public int UserId { get; set; }
+    public User User { get; set; } = null!;
+    public int? IncidentId { get; set; }
+    public Incident? Incident { get; set; }
+    public NotificationType Type { get; set; }
+    public string Title { get; set; } = string.Empty;
+    public string Message { get; set; } = string.Empty;
+    public bool IsRead { get; set; } = false;
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 }

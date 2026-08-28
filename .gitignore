@@ -31,3 +31,10 @@ bin/
 obj/
 .slim/deepwork/
 
+
+# Playwright + tests
+playwright-report/
+test-results/
+playwright/.cache/
+opsflow-api/tests/*/TestResults/
+
