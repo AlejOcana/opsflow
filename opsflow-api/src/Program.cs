@@ -46,9 +46,14 @@ builder.Services.AddSwaggerGen(c =>
     });
 });
 
-// Configure DbContext
+// Configure DbContext — support both ConnectionStrings:DefaultConnection and DATABASE_URL (Neon pooled, postgresql:// URL)
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
+    ?? builder.Configuration["DATABASE_URL"]
+    ?? Environment.GetEnvironmentVariable("DATABASE_URL");
+if (string.IsNullOrWhiteSpace(connectionString))
+    throw new InvalidOperationException("Database connection string missing: set ConnectionStrings__DefaultConnection or DATABASE_URL (Neon pooled URL)");
 builder.Services.AddDbContext<OpsFlowDbContext>(options =>
-    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
+    options.UseNpgsql(connectionString));
 
 // Configure JWT Authentication
 var jwtKey = builder.Configuration["Jwt:Key"];

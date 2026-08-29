@@ -38,3 +38,9 @@ test-results/
 playwright/.cache/
 opsflow-api/tests/*/TestResults/
 
+.neon
+
+# Neon local context (contains org/project/branch IDs, not secrets but local)
+.neon
+.neon.local
+
