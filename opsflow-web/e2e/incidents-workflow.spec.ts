@@ -174,8 +174,8 @@ test.describe('Incidents — change status via timeline/status endpoint', () => 
 
     // Verify status badge updated or timeline reloaded
     // The component calls PUT then reloads timeline; we check timeline tab has new entry
-    // Switch to timeline tab if not already visible (it is first tab)
-    await page.click('mat-tab-group mat-tab-header >> text=Timeline').catch(() => {});
+    // Switch to timeline tab if not already visible (it is first tab) — use getByRole for Material tabs
+    await page.getByRole('tab', { name: /Timeline/ }).click().catch(() => {});
     await page.waitForTimeout(500);
     // At least one timeline entry should be visible
     await expect(page.locator('.timeline-entry').first()).toBeVisible({ timeout: 10_000 });
@@ -301,13 +301,13 @@ test.describe('Incidents — assign and add comment appears in timeline', () => 
     await page.waitForLoadState('networkidle');
     await expect(page.locator('mat-card-title').first()).toBeVisible({ timeout: 10_000 });
 
-    // Open Comments tab
-    await page.click('mat-tab-group mat-tab-header >> text=Comments');
+    // Open Comments tab — use getByRole for Angular Material tabs (label is "Comments (n)")
+    await page.getByRole('tab', { name: /Comments/ }).click();
     await page.waitForTimeout(500);
     await expect(page.locator('.comment-item').first()).toBeVisible({ timeout: 10_000 });
     await expect(page.locator('.comment-item')).toHaveCount(1);
 
-    // Add new comment
+    // Add new comment — selector matches incident-detail component's textarea placeholder
     const commentText = `Playwright comment ${Date.now()}`;
     await page.fill('textarea[placeholder="Write a comment..."]', commentText);
     await page.click('button:has-text("Post comment")');
@@ -318,10 +318,10 @@ test.describe('Incidents — assign and add comment appears in timeline', () => 
     await expect(page.locator('.comment-item')).toHaveCount(2, { timeout: 10_000 });
     await expect(page.locator('.comment-item').last()).toContainText(commentText);
 
-    // Switch to Timeline and verify comment appears
-    await page.click('mat-tab-group mat-tab-header >> text=Timeline');
+    // Switch to Timeline and verify comment appears — use timeline container to avoid strict mode violation on multiple entries
+    await page.getByRole('tab', { name: /Timeline/ }).click();
     await page.waitForTimeout(500);
     await expect(page.locator('.timeline')).toBeVisible({ timeout: 10_000 });
-    await expect(page.locator('.timeline-entry')).toContainText(commentText, { timeout: 10_000 });
+    await expect(page.locator('.timeline')).toContainText(commentText, { timeout: 10_000 });
   });
 });

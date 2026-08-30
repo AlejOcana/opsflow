@@ -105,11 +105,18 @@ test.describe('Dashboard — stats load and KPI deep dive', () => {
       await expect(row).toBeVisible({ timeout: 10_000 });
       await expect(row.locator('.severity-count')).toContainText(item.count.toString());
       // bar-fill should have width % (max is 5 => 100%, 3 => 60%)
+      // Low count 0 results in width 0% which Playwright considers hidden (zero size), so check attached + width instead
       const bar = row.locator('.bar-fill');
-      await expect(bar).toBeVisible();
-      // Check that bar has style width
-      const width = await bar.evaluate((el) => (el as HTMLElement).style.width);
-      expect(width).toMatch(/%$/);
+      if (item.count === 0) {
+        await expect(bar).toBeAttached();
+        const width = await bar.evaluate((el) => (el as HTMLElement).style.width);
+        expect(width).toBe('0%');
+      } else {
+        await expect(bar).toBeVisible();
+        // Check that bar has style width
+        const width = await bar.evaluate((el) => (el as HTMLElement).style.width);
+        expect(width).toMatch(/%$/);
+      }
     }
 
     // Ensure 4 rows (all severities) rendered

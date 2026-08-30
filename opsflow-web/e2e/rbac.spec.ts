@@ -157,11 +157,12 @@ test.describe('RBAC — operator can only status own assigned', () => {
     await page.route('**/api/notifications/unread-count', async (r) => r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ count: 0 }) }));
 
     // Override status PATCH to return 403 for operator on unassigned
+    // Use route.fallback() for GET passthrough so mockIncidentDetailRoutes handler still serves GET (route.continue goes to network, not next handler)
     await page.route('**/api/incidents/1', async (route) => {
       if (route.request().method() === 'PUT') {
         await route.fulfill({ status: 403, contentType: 'application/json', body: JSON.stringify({ message: 'Forbidden: operator can only status own assigned' }) });
       } else {
-        await route.continue();
+        await route.fallback();
       }
     });
     await page.route('**/api/incidents/1/status', async (route) => {
@@ -172,8 +173,8 @@ test.describe('RBAC — operator can only status own assigned', () => {
     await page.waitForLoadState('networkidle');
     await expect(page.locator('mat-card-title').first()).toBeVisible({ timeout: 10_000 });
 
-    // UI shows status select for Operator (canCreate true)
-    const statusSelect = page.locator('mat-select');
+    // UI shows status select for Operator (canCreate true) — incident-detail component uses .status-select mat-select
+    const statusSelect = page.locator('.status-select mat-select, mat-select').first();
     if (await statusSelect.isVisible().catch(() => false)) {
       await statusSelect.click();
       await page.click('mat-option:has-text("In Progress")');

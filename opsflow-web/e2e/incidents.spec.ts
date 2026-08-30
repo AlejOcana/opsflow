@@ -87,12 +87,29 @@ test.describe('Create Incident Flow', () => {
   test('should show validation for empty title (stays on form)', async ({ page }) => {
     await page.goto('/incidents/new');
     await page.waitForLoadState('networkidle');
-    // Don't fill any fields, submit form – backend would error but UI stays
+    // Mock backend validation: empty title returns 400 so UI stays on form and shows .error-message (incident-new component)
+    await page.route('**/api/incidents', async (route) => {
+      if (route.request().method() === 'POST') {
+        let body: any = {};
+        try {
+          body = route.request().postDataJSON() ?? JSON.parse(route.request().postData() || '{}');
+        } catch {}
+        const title = body.title ?? body.Title ?? '';
+        if (!title.trim()) {
+          await route.fulfill({ status: 400, contentType: 'application/json', body: JSON.stringify({ message: 'Title is required' }) });
+          return;
+        }
+      }
+      await route.fallback();
+    });
+    // Don't fill any fields, submit form – backend will return 400 and UI stays
     await page.click('button:has-text("Create Incident")');
-    await page.waitForTimeout(500);
-    // The form should still be visible (no navigation)
+    await page.waitForTimeout(800);
+    // The form should still be visible (no navigation) and error-message from incident-new component should appear
     await expect(page.locator('input[name="title"]')).toBeVisible();
     await expect(page).toHaveURL(/\/incidents\/new/);
+    await expect(page.locator('.error-message')).toBeVisible({ timeout: 5000 });
+    await expect(page.locator('.error-message')).toContainText(/Title|required|Failed/i);
   });
 });
 

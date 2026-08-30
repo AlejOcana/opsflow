@@ -75,8 +75,10 @@ export async function setAuthStorage(page: Page, role: MockRole) {
   const user = makeUser(role);
   await page.addInitScript(
     ({ token, user }) => {
-      localStorage.setItem('token', token);
-      localStorage.setItem('user', JSON.stringify(user));
+      try {
+        localStorage.setItem('token', token);
+        localStorage.setItem('user', JSON.stringify(user));
+      } catch {}
     },
     { token: res.token, user }
   );
@@ -84,8 +86,10 @@ export async function setAuthStorage(page: Page, role: MockRole) {
 
 export async function clearAuthStorage(page: Page) {
   await page.addInitScript(() => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
+    try {
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+    } catch {}
   });
 }
 
