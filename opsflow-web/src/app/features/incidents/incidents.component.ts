@@ -39,11 +39,14 @@ import { AuthService } from '../../core/services/auth.service';
     <div class="incidents-page">
       <div class="page-header">
         <div class="header-left">
-          <h1>Incidents</h1>
+          <div>
+            <h1>Incidents</h1>
+            <p class="page-subtitle">Track, triage and resolve — all in one place</p>
+          </div>
           <span class="incident-count">{{ incidents().length }} total</span>
         </div>
         @if (auth.canCreate()) {
-          <button mat-raised-button color="primary" routerLink="/incidents/new" class="new-button">
+          <button mat-raised-button color="primary" routerLink="/incidents/new" class="new-button new-incident-btn">
             <mat-icon>add</mat-icon>
             <span class="button-text">New Incident</span>
           </button>
@@ -65,9 +68,9 @@ import { AuthService } from '../../core/services/auth.service';
 
           <mat-form-field appearance="outline" class="filter-field search-field">
             <mat-label>Search</mat-label>
-            <input 
-              matInput 
-              [(ngModel)]="filters.search" 
+            <input
+              matInput
+              [(ngModel)]="filters.search"
               (keyup.enter)="loadIncidents()"
               placeholder="Search incidents...">
             <mat-icon matSuffix>search</mat-icon>
@@ -77,17 +80,50 @@ import { AuthService } from '../../core/services/auth.service';
               </button>
             }
           </mat-form-field>
+
+          @if (filters.status || filters.search) {
+            <button mat-stroked-button class="clear-filters" (click)="filters.status=''; filters.search=''; loadIncidents()">
+              <mat-icon>filter_alt_off</mat-icon> Clear
+            </button>
+          }
         </div>
+        @if (filters.status || filters.search) {
+          <div class="active-chips">
+            @if (filters.status) {
+              <span class="filter-chip">
+                <mat-icon>circle</mat-icon> {{ filters.status }}
+                <button mat-icon-button (click)="filters.status=''; loadIncidents()"><mat-icon>close</mat-icon></button>
+              </span>
+            }
+            @if (filters.search) {
+              <span class="filter-chip">
+                <mat-icon>search</mat-icon> "{{ filters.search }}"
+                <button mat-icon-button (click)="clearSearch()"><mat-icon>close</mat-icon></button>
+              </span>
+            }
+          </div>
+        }
       </mat-card>
 
       @if (loading()) {
-        <div class="loading-container">
-          <mat-spinner diameter="48"></mat-spinner>
-          <p>Loading incidents...</p>
+        <div class="skeleton-table">
+          <div class="shimmer" style="height: 56px; border-radius: 16px 16px 0 0;"></div>
+          @for (i of [1,2,3,4,5]; track i) {
+            <div class="skeleton-row">
+              <div class="shimmer-line" style="width: 28%"></div>
+              <div class="shimmer-line" style="width: 14%"></div>
+              <div class="shimmer-line" style="width: 12%"></div>
+              <div class="shimmer-line" style="width: 16%"></div>
+              <div class="shimmer-line" style="width: 12%"></div>
+              <div class="shimmer-line" style="width: 6%"></div>
+            </div>
+          }
         </div>
       } @else if (incidents().length === 0) {
         <mat-card class="empty-state">
-          <mat-icon>inbox</mat-icon>
+          <div class="empty-illustration">
+            <mat-icon>inbox</mat-icon>
+          </div>
           <h3>No incidents found</h3>
           <p>{{ filters.search || filters.status ? 'Try adjusting your filters' : 'Get started by creating a new incident' }}</p>
           @if (auth.canCreate()) {
@@ -96,7 +132,7 @@ import { AuthService } from '../../core/services/auth.service';
               Create Incident
             </button>
           } @else {
-            <small style="color: rgba(0,0,0,0.45)">Viewers cannot create incidents</small>
+            <small style="color: #94a3b8">Viewers cannot create incidents</small>
           }
         </mat-card>
       } @else {
@@ -126,7 +162,7 @@ import { AuthService } from '../../core/services/auth.service';
             <ng-container matColumnDef="priority">
               <th mat-header-cell *matHeaderCellDef>Priority</th>
               <td mat-cell *matCellDef="let incident">
-                <span class="priority-chip" [class]="incident.priority.toLowerCase()">
+                <span class="priority-chip priority-badge" [class]="incident.priority.toLowerCase()">
                   {{ incident.priority }}
                 </span>
               </td>
@@ -138,7 +174,7 @@ import { AuthService } from '../../core/services/auth.service';
               <td mat-cell *matCellDef="let incident">
                 <div class="assignee">
                   @if (incident.assignedTo) {
-                    <mat-icon class="assignee-avatar">person</mat-icon>
+                    <span class="assignee-avatar"><mat-icon>person</mat-icon></span>
                     <span>{{ incident.assignedTo.fullName }}</span>
                   } @else {
                     <span class="unassigned">Unassigned</span>
@@ -159,10 +195,11 @@ import { AuthService } from '../../core/services/auth.service';
             <ng-container matColumnDef="actions">
               <th mat-header-cell *matHeaderCellDef></th>
               <td mat-cell *matCellDef="let incident">
-                <button 
-                  mat-icon-button 
+                <button
+                  mat-icon-button
                   [routerLink]="['/incidents', incident.id]"
-                  matTooltip="View details">
+                  matTooltip="View details"
+                  class="row-action">
                   <mat-icon>chevron_right</mat-icon>
                 </button>
               </td>
@@ -180,234 +217,319 @@ import { AuthService } from '../../core/services/auth.service';
       max-width: 1200px;
       margin: 0 auto;
     }
-    
+
     .page-header {
       display: flex;
       justify-content: space-between;
-      align-items: center;
+      align-items: flex-start;
       margin-bottom: 24px;
       flex-wrap: wrap;
       gap: 16px;
     }
-    
+
     .header-left {
       display: flex;
-      align-items: baseline;
-      gap: 12px;
-    }
-    
-    h1 {
-      margin: 0;
-      font-size: 28px;
-      font-weight: 500;
-      color: rgba(0, 0, 0, 0.87);
-    }
-    
-    .incident-count {
-      font-size: 14px;
-      color: rgba(0, 0, 0, 0.6);
-      background: #f5f5f5;
-      padding: 4px 12px;
-      border-radius: 16px;
-    }
-    
-    .new-button {
-      mat-icon {
-        margin-right: 4px;
-      }
-    }
-    
-    .filters-card {
-      padding: 16px;
-      margin-bottom: 16px;
-    }
-    
-    .filters-row {
-      display: flex;
+      align-items: flex-end;
       gap: 16px;
       flex-wrap: wrap;
+      h1 { margin: 0; font-family: var(--font-display); font-size: 32px; font-weight: 700; letter-spacing: -0.025em; line-height: 1.1; color: #0f172a; }
+      .page-subtitle { margin: 6px 0 0; color: #64748b; font-size: 14px; line-height: 1.5; }
     }
-    
+
+    .incident-count {
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: #475569;
+      background: white;
+      padding: 6px 12px;
+      border-radius: 999px;
+      border: 1px solid rgba(15,23,42,0.08);
+      box-shadow: 0 1px 3px rgba(15,23,42,0.06);
+      align-self: center;
+      white-space: nowrap;
+    }
+
+    .new-button {
+      height: 44px;
+      padding: 0 18px !important;
+      border-radius: 12px !important;
+      font-weight: 600 !important;
+      letter-spacing: -0.01em;
+      box-shadow: 0 4px 14px rgba(26,35,126,0.22) !important;
+      transition: transform 0.14s ease, box-shadow 0.2s ease, filter 0.2s ease;
+      mat-icon { margin-right: 6px; font-size: 18px; width: 18px; height: 18px; }
+      &:hover { transform: translateY(-1px); box-shadow: 0 8px 22px rgba(26,35,126,0.26) !important; filter: brightness(1.04); }
+      &:active { transform: scale(0.98); }
+    }
+
+    .filters-card {
+      padding: 18px;
+      margin-bottom: 16px;
+      border-radius: 16px !important;
+      border: 1px solid rgba(15,23,42,0.08) !important;
+      box-shadow: 0 4px 24px rgba(15,23,42,0.05), 0 1px 3px rgba(15,23,42,0.04) !important;
+      background: white !important;
+      animation: subtleIn 0.4s ease both;
+    }
+    @keyframes subtleIn { from{opacity:0; transform: translateY(6px);} to{opacity:1; transform: translateY(0);} }
+
+    .filters-row {
+      display: flex;
+      gap: 14px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
     .filter-field {
-      min-width: 160px;
+      min-width: 168px;
     }
-    
+
     .search-field {
       flex: 1;
       min-width: 240px;
     }
-    
-    .loading-container {
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      align-items: center;
-      padding: 64px;
-      color: rgba(0, 0, 0, 0.6);
-      
-      p {
-        margin-top: 16px;
-      }
+    .clear-filters {
+      height: 40px;
+      border-radius: 12px !important;
+      font-weight: 600 !important;
+      border-color: rgba(15,23,42,0.12) !important;
+      color: #475569 !important;
     }
-    
+
+    .active-chips {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-top: 14px;
+      animation: chipIn 0.28s ease both;
+    }
+    @keyframes chipIn { from{opacity:0; transform: translateY(4px);} to{opacity:1; transform: translateY(0);} }
+    .filter-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 6px 6px 12px;
+      background: #eef2ff;
+      border: 1px solid rgba(67,56,202,0.14);
+      color: #4338ca;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: -0.01em;
+      line-height: 1;
+      animation: chipIn 0.28s ease both;
+      mat-icon { font-size: 10px; width: 10px; height: 10px; color: #4338ca; }
+      button { width: 22px; height: 22px; line-height: 22px; margin-left: 2px; mat-icon { font-size: 14px; width: 14px; height: 14px; color: #4338ca; } }
+    }
+
+    .skeleton-table {
+      background: white;
+      border-radius: 20px;
+      border: 1px solid rgba(15,23,42,0.08);
+      box-shadow: 0 4px 24px rgba(15,23,42,0.06);
+      overflow: hidden;
+      padding: 0;
+    }
+    .skeleton-row {
+      display: grid;
+      grid-template-columns: 1.6fr 0.8fr 0.7fr 0.9fr 0.8fr 40px;
+      gap: 16px;
+      padding: 18px 24px;
+      border-top: 1px solid rgba(15,23,42,0.06);
+      align-items: center;
+    }
+
     .empty-state {
       display: flex;
       flex-direction: column;
       align-items: center;
-      padding: 64px;
+      padding: 56px 32px;
       text-align: center;
-      
-      mat-icon {
-        font-size: 64px;
-        width: 64px;
-        height: 64px;
-        color: rgba(0, 0, 0, 0.2);
+      border-radius: 20px !important;
+      border: 1px solid rgba(15,23,42,0.08) !important;
+      box-shadow: 0 4px 24px rgba(15,23,42,0.06) !important;
+
+      .empty-illustration {
+        width: 72px; height: 72px; border-radius: 20px; display: grid; place-items: center;
+        background: linear-gradient(135deg, #f8fafc, #f1f5f9);
+        border: 1px solid rgba(15,23,42,0.06);
         margin-bottom: 16px;
+        mat-icon { font-size: 36px; width: 36px; height: 36px; color: #cbd5e1; }
       }
-      
+
       h3 {
         margin: 0 0 8px;
-        font-size: 20px;
-        font-weight: 500;
-        color: rgba(0, 0, 0, 0.87);
+        font-family: var(--font-display);
+        font-size: 18px;
+        font-weight: 700;
+        letter-spacing: -0.01em;
+        color: #0f172a;
       }
-      
+
       p {
-        margin: 0 0 24px;
-        color: rgba(0, 0, 0, 0.6);
+        margin: 0 0 20px;
+        color: #64748b;
+        font-size: 14px;
+        line-height: 1.5;
+        max-width: 360px;
       }
     }
-    
+
     .table-container {
       background: white;
-      border-radius: 12px;
+      border-radius: 20px;
       overflow: hidden;
-      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+      border: 1px solid rgba(15,23,42,0.08);
+      box-shadow: 0 4px 24px rgba(15,23,42,0.07), 0 1px 3px rgba(15,23,42,0.05);
     }
-    
+
     .incidents-table {
       width: 100%;
-      
+
       .incident-title {
-        color: #1976d2;
+        color: #1a237e;
         text-decoration: none;
-        font-weight: 500;
-        
-        &:hover {
-          text-decoration: underline;
-        }
+        font-weight: 600;
+        font-size: 14px;
+        letter-spacing: -0.01em;
+        transition: color 0.16s ease;
+        &:hover { color: #5c4ddb; }
       }
-      
+
       .incident-row {
         cursor: pointer;
-        transition: background-color 0.2s ease;
-        
+        transition: background-color 0.16s ease, transform 0.12s ease;
+        animation: rowIn 0.36s ease both;
+        &:nth-child(1) { animation-delay: 0ms; }
+        &:nth-child(2) { animation-delay: 40ms; }
+        &:nth-child(3) { animation-delay: 80ms; }
+        &:nth-child(4) { animation-delay: 120ms; }
+        &:nth-child(5) { animation-delay: 160ms; }
         &:hover {
-          background: rgba(25, 118, 210, 0.04);
+          background: rgba(92, 77, 219, 0.05) !important;
         }
+        &:active { background: rgba(92,77,219,0.08) !important; }
+      }
+      @keyframes rowIn { from{opacity:0; transform: translateY(4px);} to{opacity:1; transform: translateY(0);} }
+      .row-action {
+        transition: transform 0.16s ease, background 0.16s ease;
+        &:hover { background: #eef2ff !important; transform: translateX(2px); }
       }
     }
-    
+    @keyframes shimmer { 0%{transform:translateX(-100%);} 100%{transform:translateX(100%);} }
+
     .status-chip {
       display: inline-flex;
-      padding: 4px 12px;
-      border-radius: 16px;
-      font-size: 12px;
-      font-weight: 500;
-      
-      &.open { background: #e3f2fd; color: #1976d2; }
-      &.inprogress { background: #fff8e1; color: #f9a825; }
-      &.resolved { background: #e8f5e9; color: #388e3c; }
-      &.closed { background: #eceff1; color: #546e7a; }
+      align-items: center;
+      padding: 5px 11px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      border: 1px solid transparent;
+      line-height: 1;
+
+      &.open { background: #eef2ff; color: #4338ca; border-color: rgba(67,56,202,0.12); }
+      &.inprogress { background: #fffbeb; color: #92400e; border-color: rgba(180,83,9,0.12); }
+      &.resolved { background: #f5f3ff; color: #6d28d9; border-color: rgba(109,40,217,0.12); }
+      &.closed { background: #f1f5f9; color: #475569; border-color: rgba(15,23,42,0.08); }
     }
-    
+
     .priority-chip {
       display: inline-flex;
-      padding: 4px 8px;
-      border-radius: 4px;
+      align-items: center;
+      gap: 6px;
+      padding: 5px 10px;
+      border-radius: 999px;
       font-size: 11px;
-      font-weight: 600;
+      font-weight: 700;
       text-transform: uppercase;
-      letter-spacing: 0.3px;
-      
-      &.critical { background: #ffebee; color: #c62828; }
-      &.high { background: #fff3e0; color: #ef6c00; }
-      &.medium { background: #fffde7; color: #f9a825; }
-      &.low { background: #e3f2fd; color: #1976d2; }
+      letter-spacing: 0.06em;
+      border: 1px solid transparent;
+      line-height: 1;
+      &::before {
+        content: '';
+        width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0;
+      }
+
+      &.critical { background: #fef2f2; color: #991b1b; border-color: #fecaca; &::before{ background:#dc2626; box-shadow: 0 0 0 4px rgba(220,38,38,0.12);} }
+      &.high { background: #fffbeb; color: #92400e; border-color: #fde68a; &::before{ background:#f59e0b; } }
+      &.medium { background: #fffbeb; color: #b45309; border-color: #fde68a; &::before{ background:#f59e0b; opacity: 0.9;} }
+      &.low { background: #ecfeff; color: #0e7490; border-color: #a5f3fc; &::before{ background:#06b6d4; } }
     }
-    
+
     .assignee {
       display: flex;
       align-items: center;
       gap: 8px;
-      
-      .assignee-avatar {
-        font-size: 20px;
-        width: 20px;
-        height: 20px;
-        color: rgba(0, 0, 0, 0.5);
-      }
-      
-      .unassigned {
-        color: rgba(0, 0, 0, 0.4);
-        font-style: italic;
-      }
-    }
-    
-    .date {
-      color: rgba(0, 0, 0, 0.6);
       font-size: 13px;
+      font-weight: 500;
+      letter-spacing: -0.01em;
+      color: #334155;
+
+      .assignee-avatar {
+        width: 28px; height: 28px; border-radius: 50%; background: #f1f5f9; border: 1px solid rgba(15,23,42,0.06);
+        display: grid; place-items: center; flex-shrink: 0;
+        mat-icon { font-size: 16px; width: 16px; height: 16px; color: #64748b; }
+      }
+
+      .unassigned {
+        color: #94a3b8;
+        font-style: italic;
+        font-weight: 500;
+        font-size: 13px;
+      }
     }
-    
+
+    .date {
+      color: #64748b;
+      font-size: 13px;
+      font-weight: 500;
+      letter-spacing: -0.01em;
+      font-family: var(--font-mono);
+    }
+
     @media (max-width: 768px) {
       .page-header {
         flex-direction: column;
         align-items: stretch;
       }
-      
+
       .header-left {
         flex-direction: column;
-        gap: 4px;
+        align-items: flex-start;
+        gap: 10px;
       }
-      
-      .new-button {
-        .button-text {
-          display: none;
-        }
-      }
-      
+
       .filters-row {
         flex-direction: column;
+        align-items: stretch;
       }
-      
+
       .filter-field, .search-field {
         width: 100%;
         min-width: unset;
       }
-      
+
       .table-container {
         overflow-x: auto;
+        border-radius: 16px;
       }
-      
+
       .incidents-table {
-        min-width: 600px;
+        min-width: 680px;
       }
+      .skeleton-row { grid-template-columns: 1fr; gap: 8px; }
     }
-    
-    @media (max-width: 480px) {
-      h1 {
-        font-size: 24px;
-      }
-      
-      .loading-container, .empty-state {
-        padding: 32px;
-      }
-      
-      .empty-state mat-icon {
-        font-size: 48px;
-        width: 48px;
-        height: 48px;
-      }
+
+    @media (max-width: 390px) {
+      h1 { font-size: 24px !important; }
+      .incident-count { align-self: flex-start; }
+      .filters-card { padding: 14px; border-radius: 14px !important; }
+      .table-container { border-radius: 14px; }
     }
   `]
 })
