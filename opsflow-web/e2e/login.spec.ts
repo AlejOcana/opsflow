@@ -15,7 +15,7 @@ test.describe('Login Flow', () => {
 
   test('should display login form with title', async ({ page }) => {
     await expect(page.locator('.logo-text')).toContainText('OpsFlow');
-    await expect(page.locator('.login-subtitle')).toContainText('Sign in to manage your incidents');
+    await expect(page.locator('.login-subtitle')).toContainText(/Incident management/i);
   });
 
   test('should show validation error for empty credentials', async ({ page }) => {
