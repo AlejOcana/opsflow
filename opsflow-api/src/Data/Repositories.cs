@@ -299,12 +299,15 @@ public class IncidentRepository : IIncidentRepository
     public async Task<IEnumerable<IncidentTrendDto>> GetTrendAsync(int organizationId, int days)
     {
         var startDate = DateTime.UtcNow.AddDays(-days);
-        return await _context.Incidents
+        var incidents = await _context.Incidents
             .Where(i => i.OrganizationId == organizationId && i.CreatedAt >= startDate)
-            .GroupBy(i => i.CreatedAt.Date)
+            .Select(i => i.CreatedAt)
+            .ToListAsync();
+        return incidents
+            .GroupBy(d => d.Date)
             .Select(g => new IncidentTrendDto(g.Key, g.Count()))
             .OrderBy(x => x.Date)
-            .ToListAsync();
+            .ToList();
     }
 }
 
