@@ -5,6 +5,7 @@
     "ng": "ng",
     "start": "ng serve",
     "build": "ng build",
+    "vercel:build": "node -e \"require('fs').writeFileSync('src/environments/environment.prod.ts','export const environment={production:true,apiUrl:'+(process.env.API_URL||'https://opsflow-api-ej8p.onrender.com/api')+'}')\" && ng build",
     "watch": "ng build --watch --configuration development",
     "test": "jest --passWithNoTests",
     "test:watch": "jest --watch",

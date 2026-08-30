@@ -1,6 +1,6 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "buildCommand": "API_URL=${API_URL:-https://opsflow-api.onrender.com/api} && echo \"export const environment={production:true,apiUrl:'$API_URL'}\" > src/environments/environment.prod.ts && echo \"[vercel] injected apiUrl $API_URL -> src/environments/environment.prod.ts\" && npm run build",
+  "buildCommand": "npm run vercel:build",
   "outputDirectory": "dist/opsflow-web/browser",
   "framework": "angular",
   "rewrites": [
