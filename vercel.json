@@ -2,7 +2,7 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "buildCommand": "cd opsflow-web && npm run vercel:build",
   "outputDirectory": "opsflow-web/dist/opsflow-web/browser",
-  "installCommand": "cd opsflow-web && pnpm install",
+  "installCommand": "cd opsflow-web && npm install --legacy-peer-deps",
   "framework": "angular",
   "rewrites": [
     {
@@ -47,6 +47,6 @@
     }
   ],
   "env": {
-    "API_URL": "https://opsflow-api.onrender.com/api"
+    "API_URL": "https://opsflow-api-ej8p.onrender.com/api"
   }
 }

@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using Npgsql;
 using OpsFlow.Api.Data;
 using OpsFlow.Api.DTOs;
 using OpsFlow.Api.Middleware;
@@ -47,9 +48,8 @@ builder.Services.AddSwaggerGen(c =>
 });
 
 // Configure DbContext — support both ConnectionStrings:DefaultConnection and DATABASE_URL (Neon pooled, postgresql:// URL)
-var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
-    ?? builder.Configuration["DATABASE_URL"]
-    ?? Environment.GetEnvironmentVariable("DATABASE_URL");
+// Handles Neon pooled postgresql:// URI via NpgsqlConnectionStringBuilder and empty DefaultConnection fallback (Render).
+var connectionString = ResolveConnectionString(builder.Configuration);
 if (string.IsNullOrWhiteSpace(connectionString))
     throw new InvalidOperationException("Database connection string missing: set ConnectionStrings__DefaultConnection or DATABASE_URL (Neon pooled URL)");
 builder.Services.AddDbContext<OpsFlowDbContext>(options =>
@@ -227,6 +227,87 @@ CREATE TABLE IF NOT EXISTS ""Notifications"" (
     {
         Console.WriteLine($"EnsurePhase2Tables failed (non-fatal): {ex.Message}");
     }
+}
+
+static string ResolveConnectionString(IConfiguration configuration)
+{
+    // (1) first non-empty among ConnectionStrings:DefaultConnection, DATABASE_URL (config), DATABASE_URL (env)
+    // Handles Render case where appsettings.Production.json contains empty DefaultConnection
+    var raw = configuration.GetConnectionString("DefaultConnection");
+    if (string.IsNullOrWhiteSpace(raw))
+        raw = configuration["DATABASE_URL"];
+    if (string.IsNullOrWhiteSpace(raw))
+        raw = Environment.GetEnvironmentVariable("DATABASE_URL");
+    if (string.IsNullOrWhiteSpace(raw))
+        return string.Empty;
+
+    raw = raw.Trim();
+
+    // (2) regular Npgsql key/value strings unchanged
+    if (!raw.StartsWith("postgresql://", StringComparison.OrdinalIgnoreCase) &&
+        !raw.StartsWith("postgres://", StringComparison.OrdinalIgnoreCase))
+    {
+        return raw;
+    }
+
+    // (3) convert postgresql:// / postgres:// URI -> Npgsql key/value string
+    return ConvertPostgresUrlToConnectionString(raw);
+}
+
+static string ConvertPostgresUrlToConnectionString(string postgresUrl)
+{
+    // Never log postgresUrl (contains secret) — (4) no logging here
+    var uri = new Uri(postgresUrl);
+
+    string username = string.Empty;
+    string password = string.Empty;
+    if (!string.IsNullOrEmpty(uri.UserInfo))
+    {
+        var sep = uri.UserInfo.IndexOf(':');
+        if (sep >= 0)
+        {
+            username = Uri.UnescapeDataString(uri.UserInfo.Substring(0, sep));
+            password = Uri.UnescapeDataString(uri.UserInfo.Substring(sep + 1));
+        }
+        else
+        {
+            username = Uri.UnescapeDataString(uri.UserInfo);
+        }
+    }
+
+    var database = Uri.UnescapeDataString(uri.AbsolutePath.Trim('/'));
+
+    var builder = new NpgsqlConnectionStringBuilder
+    {
+        Host = uri.Host,
+        Port = uri.Port == -1 ? 5432 : uri.Port,
+        Username = username,
+        Password = password,
+        SslMode = SslMode.Require,
+    };
+    if (!string.IsNullOrEmpty(database))
+        builder.Database = database;
+
+    // preserve channel_binding=require when present in query string
+    var query = uri.Query;
+    if (!string.IsNullOrWhiteSpace(query))
+    {
+        var trimmed = query.TrimStart('?');
+        foreach (var part in trimmed.Split('&', StringSplitOptions.RemoveEmptyEntries))
+        {
+            var kv = part.Split('=', 2);
+            var key = Uri.UnescapeDataString(kv[0]).Trim();
+            var value = kv.Length > 1 ? Uri.UnescapeDataString(kv[1]).Trim() : string.Empty;
+            if (key.Equals("channel_binding", StringComparison.OrdinalIgnoreCase) &&
+                value.Equals("require", StringComparison.OrdinalIgnoreCase))
+            {
+                builder.ChannelBinding = ChannelBinding.Require;
+                break;
+            }
+        }
+    }
+
+    return builder.ConnectionString;
 }
 
 app.Run();
