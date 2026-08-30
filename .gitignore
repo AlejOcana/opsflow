@@ -44,3 +44,8 @@ opsflow-api/tests/*/TestResults/
 .neon
 .neon.local
 
+
+# Temp Render env payloads
+env-vars.json
+single-env.json
+

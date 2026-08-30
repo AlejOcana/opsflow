@@ -1,0 +1,28 @@
+{
+  "mcp": {
+    "Neon": {
+      "type": "remote",
+      "url": "https://mcp.neon.tech/mcp",
+      "enabled": true,
+      "headers": {
+        "Authorization": "Bearer ${NEON_API_KEY}"
+      }
+    },
+    "Render": {
+      "type": "remote",
+      "url": "https://mcp.render.com/mcp",
+      "enabled": true,
+      "headers": {
+        "Authorization": "Bearer ${RENDER_API_KEY}"
+      }
+    },
+    "Vercel": {
+      "type": "remote",
+      "url": "https://mcp.vercel.com",
+      "enabled": true,
+      "headers": {
+        "Authorization": "Bearer ${VERCEL_API_KEY}"
+      }
+    }
+  }
+}
