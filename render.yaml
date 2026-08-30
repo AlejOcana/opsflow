@@ -41,6 +41,9 @@ services:
       # Optional alias for CORS (both forms are read in Program.cs)
       - key: CORS_ALLOWED_ORIGINS
         value: https://opsflow.alejocana.es,https://opsflow-web.vercel.app
+      # Fix inotify limit (128) in Docker — use polling watcher instead of inotify (Render free tier)
+      - key: DOTNET_USE_POLLING_FILE_WATCHER
+        value: "true"
 
 # Alternative: Render-managed Postgres (free tier, 90-day expiry). Uncomment to use instead of Neon.
 # To use: uncomment below, then change ConnectionStrings__DefaultConnection to fromDatabase:
