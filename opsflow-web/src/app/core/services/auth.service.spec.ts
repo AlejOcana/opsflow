@@ -36,15 +36,11 @@ describe('AuthService', () => {
   it('should make POST request to /api/auth/login', (done) => {
     const mockResponse = { 
       token: 'mock-jwt-token', 
-      user: { 
-        id: '1', 
-        email: 'admin@test.com', 
-        role: 'Admin', 
-        firstName: 'Admin', 
-        lastName: 'User', 
-        organizationId: '1', 
-        organizationName: 'Org' 
-      } 
+      userId: 1,
+      username: 'admin',
+      email: 'admin@test.com',
+      fullName: 'Admin User',
+      role: 3
     };
     
     service.login('admin@test.com', 'password123').subscribe({
@@ -61,15 +57,11 @@ describe('AuthService', () => {
   it('should set token and user in localStorage on successful login', (done) => {
     const mockResponse = { 
       token: 'mock-jwt-token', 
-      user: { 
-        id: '1', 
-        email: 'admin@test.com', 
-        role: 'Admin', 
-        firstName: 'Admin', 
-        lastName: 'User', 
-        organizationId: '1', 
-        organizationName: 'Org' 
-      } 
+      userId: 1,
+      username: 'admin',
+      email: 'admin@test.com',
+      fullName: 'Admin User',
+      role: 3
     };
     
     service.login('admin@test.com', 'password123').subscribe({
@@ -110,7 +102,7 @@ describe('AuthService', () => {
   });
 
   it('should return parsed user when stored', () => {
-    const mockUser = { id: '1', email: 'test@test.com', role: 'Admin', firstName: 'Test', lastName: 'User', organizationId: '1', organizationName: 'Org' };
+    const mockUser = { id: '1', email: 'test@test.com', role: 'Admin', fullName: 'Test User', username: 'testuser' };
     localStorage.setItem('user', JSON.stringify(mockUser));
     expect(service.getUser()).toEqual(mockUser);
   });

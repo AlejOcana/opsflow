@@ -1,14 +1,14 @@
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 WORKDIR /src
 
-COPY src/OpsFlow.Api.csproj ./OpsFlow.Api.csproj
-RUN dotnet restore ./OpsFlow.Api.csproj
+COPY src/OpsFlow.Api.csproj ./
+RUN dotnet restore
 
-COPY src/ ./src/
-RUN dotnet build ./src/OpsFlow.Api.csproj -c Release -o /app/build
+COPY src/. ./
+RUN dotnet build -c Release -o /app/build
 
 FROM build AS publish
-RUN dotnet publish ./src/OpsFlow.Api.csproj -c Release -o /app/publish
+RUN dotnet publish -c Release -o /app/publish
 
 FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS final
 WORKDIR /app

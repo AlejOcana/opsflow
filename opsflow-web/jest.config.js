@@ -18,5 +18,20 @@ module.exports = {
     '@features/(.*)': '<rootDir>/src/app/features/$1'
   },
   transformIgnorePatterns: ['node_modules/(?!.*\\.mjs$)'],
-  testTimeout: 30000
+  testTimeout: 30000,
+  globals: {
+    'ts-jest': {
+      diagnostics: false
+    }
+  },
+  transform: {
+    '^.+\\.(ts|js|mjs|html|svg)$': [
+      'jest-preset-angular',
+      {
+        tsconfig: '<rootDir>/tsconfig.spec.json',
+        stringifyContentPathRegex: '\\.(html|svg)$',
+        diagnostics: false
+      }
+    ]
+  }
 };

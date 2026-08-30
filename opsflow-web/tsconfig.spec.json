@@ -3,8 +3,10 @@
   "compilerOptions": {
     "outDir": "./out-tsc/spec",
     "types": [
-      "jasmine"
-    ]
+      "jasmine",
+      "jest"
+    ],
+    "isolatedModules": true
   },
   "include": [
     "src/**/*.spec.ts",

@@ -37,7 +37,7 @@ public class OrganizationsController : ControllerBase
         {
             var users = await _userRepository.GetByOrganizationAsync(org.Id);
             var teams = await _teamRepository.GetByOrganizationAsync(org.Id);
-            var incidents = await _incidentRepository.GetByOrganizationAsync(org.Id, 1, 1);
+            var incidentCount = await _incidentRepository.GetCountByOrganizationAsync(org.Id);
             dtos.Add(new OrganizationDto(
                 org.Id,
                 org.Name,
@@ -47,7 +47,7 @@ public class OrganizationsController : ControllerBase
                 org.IsActive,
                 users.Count(),
                 teams.Count(),
-                incidents.Count()
+                incidentCount
             ));
         }
         return Ok(dtos);

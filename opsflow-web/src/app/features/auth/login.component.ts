@@ -9,6 +9,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatTooltipModule } from '@angular/material/tooltip';
+import { trigger, transition, style, animate } from '@angular/animations';
 import { AuthService } from '../../core/services/auth.service';
 
 @Component({
@@ -24,6 +25,14 @@ import { AuthService } from '../../core/services/auth.service';
     MatIconModule,
     MatProgressSpinnerModule,
     MatTooltipModule
+  ],
+  animations: [
+    trigger('fadeInUp', [
+      transition(':enter', [
+        style({ opacity: 0, transform: 'translateY(20px)' }),
+        animate('300ms ease-out', style({ opacity: 1, transform: 'translateY(0)' }))
+      ])
+    ])
   ],
   template: `
     <div class="login-container">
@@ -380,9 +389,10 @@ export class LoginComponent {
 
     this.authService.login(this.email, this.password).subscribe({
       next: () => {
+        this.loading.set(false);
         this.router.navigate(['/dashboard']);
       },
-      error: (err) => {
+      error: (err: any) => {
         this.loading.set(false);
         this.error.set(err.error?.message || 'Invalid credentials. Please try again.');
       }

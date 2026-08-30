@@ -42,12 +42,12 @@ import { environment } from '../../../environments/environment';
                       <span>Members ({{ team.members.length }})</span>
                     </h4>
                     <div class="members-list">
-                      @for (member of team.members; track member.id) {
+                      @for (member of team.members; track member.userId) {
                         <div class="member-item">
                           <mat-icon class="member-avatar">person</mat-icon>
                           <div class="member-info">
-                            <span class="member-name">{{ member.fullName }}</span>
-                            <span class="member-role">{{ member.role }}</span>
+                            <span class="member-name">{{ member.userName }}</span>
+                            <span class="member-role">{{ member.roleInTeam }}</span>
                           </div>
                         </div>
                       }

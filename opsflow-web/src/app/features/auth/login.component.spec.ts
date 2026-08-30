@@ -3,6 +3,8 @@ import { Router } from '@angular/router';
 import { LoginComponent } from './login.component';
 import { AuthService } from '../../core/services/auth.service';
 import { signal } from '@angular/core';
+import { of, throwError, NEVER } from 'rxjs';
+import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 
 describe('LoginComponent', () => {
   let component: LoginComponent;
@@ -22,7 +24,7 @@ describe('LoginComponent', () => {
     };
 
     await TestBed.configureTestingModule({
-      imports: [LoginComponent],
+      imports: [LoginComponent, NoopAnimationsModule],
       providers: [
         { provide: AuthService, useValue: mockAuthService },
         { provide: Router, useValue: mockRouter }
@@ -64,14 +66,14 @@ describe('LoginComponent', () => {
   });
 
   it('should set email and password on fillCredentials', () => {
-    component.fillCredentials();
+    component.fillCredentials('admin@opsflow.io', 'Admin123!');
     expect(component.email).toBe('admin@opsflow.io');
-    expect(component.password).toBe('admin123');
+    expect(component.password).toBe('Admin123!');
   });
 
   it('should clear error message on fillCredentials', () => {
     component.error.set('Some error');
-    component.fillCredentials();
+    component.fillCredentials('admin@opsflow.io', 'Admin123!');
     expect(component.error()).toBe('');
   });
 
@@ -96,41 +98,38 @@ describe('LoginComponent', () => {
     expect(component.error()).toBe('Please enter email and password');
   });
 
-  it('should set loading to true during login', async () => {
-    mockAuthService.login.mockReturnValue(new Promise(() => {}));
+  it('should set loading to true during login', () => {
+    mockAuthService.login.mockReturnValue(NEVER);
     component.email = 'test@test.com';
     component.password = 'password';
     component.login();
     expect(component.loading()).toBe(true);
   });
 
-  it('should navigate to dashboard on successful login', async () => {
-    mockAuthService.login.mockResolvedValue({ 
+  it('should navigate to dashboard on successful login', () => {
+    mockAuthService.login.mockReturnValue(of({ 
       token: 'mock-token', 
-      user: { 
-        id: '1', 
-        email: 'test@test.com', 
-        role: 'Admin', 
-        firstName: 'Test', 
-        lastName: 'User', 
-        organizationId: '1', 
-        organizationName: 'Org' 
-      } 
-    });
+      userId: 1,
+      username: 'test',
+      email: 'test@test.com',
+      fullName: 'Test User',
+      role: 3
+    }));
     component.email = 'test@test.com';
     component.password = 'password';
     
-    await component.login();
+    component.login();
     
     expect(mockRouter.navigate).toHaveBeenCalledWith(['/dashboard']);
+    expect(component.loading()).toBe(false);
   });
 
-  it('should set error on login failure', async () => {
-    mockAuthService.login.mockRejectedValue({ error: { message: 'Invalid credentials' } });
+  it('should set error on login failure', () => {
+    mockAuthService.login.mockReturnValue(throwError(() => ({ error: { message: 'Invalid credentials' } })));
     component.email = 'test@test.com';
     component.password = 'wrong';
     
-    await component.login();
+    component.login();
     
     expect(component.error()).toBe('Invalid credentials');
     expect(component.loading()).toBe(false);
@@ -138,9 +137,9 @@ describe('LoginComponent', () => {
 
   it('should toggle hidePassword signal', () => {
     expect(component.hidePassword()).toBe(true);
-    component.togglePasswordVisibility();
+    component.hidePassword.set(!component.hidePassword());
     expect(component.hidePassword()).toBe(false);
-    component.togglePasswordVisibility();
+    component.hidePassword.set(!component.hidePassword());
     expect(component.hidePassword()).toBe(true);
   });
 });

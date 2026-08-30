@@ -41,6 +41,7 @@ public class TeamsController : ControllerBase
     }
 
     [HttpPost]
+    [Authorize(Policy = "AdminOnly")]
     public async Task<ActionResult<TeamDto>> Create([FromBody] CreateTeamRequest request)
     {
         try

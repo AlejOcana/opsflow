@@ -96,8 +96,9 @@ public class IncidentsController : ControllerBase
     {
         var role = User.FindFirst(ClaimTypes.Role)?.Value;
         if (role == UserRole.User.ToString()) return Forbid();
-        var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value!);
-        var incident = await _incidentService.CreateAsync(request, userId);
+        var userId = GetUserId();
+        if (userId == null) return Unauthorized();
+        var incident = await _incidentService.CreateAsync(request, userId.Value);
         return CreatedAtAction(nameof(GetById), new { id = incident.Id }, incident);
     }
 
@@ -106,7 +107,8 @@ public class IncidentsController : ControllerBase
     {
         var role = User.FindFirst(ClaimTypes.Role)?.Value;
         if (role == UserRole.User.ToString()) return Forbid();
-        var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value!);
+        var userId = GetUserId();
+        if (userId == null) return Unauthorized();
 
         // Contributor (Operator) can only change own assigned incidents - check status change
         if (role == UserRole.Operator.ToString() && request.Status.HasValue)
@@ -116,10 +118,10 @@ public class IncidentsController : ControllerBase
             // need to verify assignee is current user: fetch via context or service - quick check via GetById
             // If not assigned to caller, forbid
             var incidentEntity = await _context.Incidents.FindAsync(id);
-            if (incidentEntity?.AssigneeId != userId) return Forbid();
+            if (incidentEntity?.AssigneeId != userId.Value) return Forbid();
         }
 
-        var incident = await _incidentService.UpdateAsync(id, request, userId);
+        var incident = await _incidentService.UpdateAsync(id, request, userId.Value);
         if (incident == null)
             return NotFound();
         return Ok(incident);
@@ -129,10 +131,11 @@ public class IncidentsController : ControllerBase
     [Authorize(Policy = "CanAssign")]
     public async Task<ActionResult<IncidentDto>> Assign(int id, [FromBody] AssignRequest request)
     {
-        var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value!);
+        var userId = GetUserId();
+        if (userId == null) return Unauthorized();
         try
         {
-            var incident = await _incidentService.AssignAsync(id, request.AssigneeId, userId);
+            var incident = await _incidentService.AssignAsync(id, request.AssigneeId, userId.Value);
             if (incident == null) return NotFound();
             return Ok(incident);
         }
@@ -147,18 +150,19 @@ public class IncidentsController : ControllerBase
     {
         var role = User.FindFirst(ClaimTypes.Role)?.Value;
         if (role == UserRole.User.ToString()) return Forbid();
-        var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value!);
+        var userId = GetUserId();
+        if (userId == null) return Unauthorized();
 
         if (role == UserRole.Operator.ToString())
         {
             var incidentEntity = await _context.Incidents.FindAsync(id);
-            if (incidentEntity?.AssigneeId != userId) return Forbid();
+            if (incidentEntity?.AssigneeId != userId.Value) return Forbid();
         }
 
         if (!Enum.TryParse<IncidentStatus>(request.Status, true, out var statusEnum))
             return BadRequest(new { message = $"Invalid status {request.Status}" });
 
-        var incident = await _incidentService.UpdateStatusAsync(id, statusEnum, userId);
+        var incident = await _incidentService.UpdateStatusAsync(id, statusEnum, userId.Value);
         if (incident == null) return NotFound();
         return Ok(incident);
     }
@@ -185,10 +189,11 @@ public class IncidentsController : ControllerBase
     public async Task<ActionResult<CommentDto>> AddComment(int id, [FromBody] CreateCommentBody request)
     {
         if (string.IsNullOrWhiteSpace(request.Content)) return BadRequest(new { message = "Content required" });
-        var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value!);
+        var userId = GetUserId();
+        if (userId == null) return Unauthorized();
         try
         {
-            var comment = await _incidentService.AddCommentAsync(id, request.Content, userId);
+            var comment = await _incidentService.AddCommentAsync(id, request.Content, userId.Value);
             return CreatedAtAction(nameof(GetComments), new { id }, comment);
         }
         catch (InvalidOperationException ex)
@@ -209,10 +214,11 @@ public class IncidentsController : ControllerBase
     [Authorize(Policy = "ContributorPlus")]
     public async Task<ActionResult<AttachmentDto>> AddAttachment(int id, [FromBody] CreateAttachmentRequest request)
     {
-        var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value!);
+        var userId = GetUserId();
+        if (userId == null) return Unauthorized();
         try
         {
-            var att = await _attachmentService.CreateAsync(id, request, userId);
+            var att = await _attachmentService.CreateAsync(id, request, userId.Value);
             return CreatedAtAction(nameof(GetAttachments), new { id }, att);
         }
         catch (InvalidOperationException ex)
@@ -238,6 +244,14 @@ public class IncidentsController : ControllerBase
         if (!result)
             return NotFound();
         return NoContent();
+    }
+
+    private int? GetUserId()
+    {
+        var value = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (int.TryParse(value, out var id))
+            return id;
+        return null;
     }
 }
 

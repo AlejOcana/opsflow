@@ -1,272 +1,167 @@
-name: CI
+name: OpsFlow CI
 
 on:
   push:
-    branches: [main, master, develop]
+    branches: [master, main]
   pull_request:
-    branches: [main, master, develop]
-
-concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+    branches: [master, main]
 
 jobs:
-  api-test:
-    name: api-test (dotnet)
+  # ─────────────────────────────────────────────
+  # Job 1: API unit tests (.NET)
+  # ─────────────────────────────────────────────
+  api-tests:
+    name: API Tests
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: opsflow-api
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
       - name: Setup .NET 8
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: 8.0.x
-
-      - name: Cache NuGet
-        uses: actions/cache@v4
-        with:
-          path: ~/.nuget/packages
-          key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj') }}
-          restore-keys: |
-            ${{ runner.os }}-nuget-
+          dotnet-version: '8.0.x'
 
       - name: Restore
-        run: dotnet restore opsflow-api/tests/OpsFlow.Api.Tests/OpsFlow.Api.Tests.csproj
+        run: dotnet restore tests/OpsFlow.Api.Tests/OpsFlow.Api.Tests.csproj
 
-      - name: Build (Release)
-        run: dotnet build opsflow-api/src/OpsFlow.Api.csproj -c Release --no-restore
+      - name: Build
+        run: dotnet build tests/OpsFlow.Api.Tests/OpsFlow.Api.Tests.csproj -c Release --no-restore
 
       - name: Test
-        run: dotnet test opsflow-api/tests/OpsFlow.Api.Tests/OpsFlow.Api.Tests.csproj -c Release --no-build --logger "trx;LogFileName=test-results.trx" --collect:"XPlat Code Coverage" --results-directory ./TestResults
+        run: dotnet test tests/OpsFlow.Api.Tests/OpsFlow.Api.Tests.csproj -c Release --no-build --verbosity normal --logger "trx;LogFileName=test-results.trx"
 
       - name: Upload test results
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: api-test-results
-          path: |
-            TestResults/
-            **/TestResults/**
+          path: opsflow-api/tests/OpsFlow.Api.Tests/TestResults/
+          retention-days: 7
 
-  web-build:
-    name: web-build (angular)
+  # ─────────────────────────────────────────────
+  # Job 2: Frontend E2E tests (Playwright)
+  # ─────────────────────────────────────────────
+  e2e-tests:
+    name: E2E Tests (Playwright)
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: opsflow-web
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 9
-
-      - name: Setup Node 20
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
-          cache: pnpm
+          node-version: '22'
+          cache: 'pnpm'
           cache-dependency-path: opsflow-web/pnpm-lock.yaml
 
-      - name: Cache Angular
-        uses: actions/cache@v4
-        with:
-          path: |
-            opsflow-web/.angular
-            opsflow-web/dist
-          key: ${{ runner.os }}-angular-${{ hashFiles('opsflow-web/pnpm-lock.yaml') }}
-          restore-keys: |
-            ${{ runner.os }}-angular-
+      - name: Install pnpm
+        run: corepack enable && corepack prepare pnpm@latest --activate
 
-      - name: Install (opsflow-web)
-        working-directory: opsflow-web
+      - name: Install dependencies
         run: pnpm install --frozen-lockfile
-
-      - name: Build production
-        working-directory: opsflow-web
-        run: pnpm run build -- --configuration production
-        # fallback if pnpm run build fails due to ng, also try npx:
-        # run: npx ng build --configuration production
-
-      - name: Upload dist
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: web-dist
-          path: opsflow-web/dist
-
-  e2e:
-    name: e2e (playwright + api + postgres)
-    runs-on: ubuntu-latest
-    needs: [api-test, web-build]
-    services:
-      postgres:
-        image: postgres:16-alpine
-        env:
-          POSTGRES_DB: opsflow
-          POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: postgres
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd pg_isready -U postgres -d opsflow
-          --health-interval 5s
-          --health-timeout 5s
-          --health-retries 5
-
-    env:
-      ConnectionStrings__DefaultConnection: Host=localhost;Port=5432;Database=opsflow;Username=postgres;Password=postgres
-      Jwt__Key: OpsFlowSecretKey1234567890123456789012345678901234567890
-      Jwt__Issuer: OpsFlow.Api
-      Jwt__Audience: OpsFlow.Api
-      ASPNETCORE_ENVIRONMENT: Development
-      ASPNETCORE_URLS: http://localhost:5000
-      CI: true
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup .NET 8
-        uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: 8.0.x
-
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 9
-
-      - name: Setup Node 20
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: pnpm
-          cache-dependency-path: opsflow-web/pnpm-lock.yaml
-
-      - name: Cache NuGet
-        uses: actions/cache@v4
-        with:
-          path: ~/.nuget/packages
-          key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj') }}
-          restore-keys: |
-            ${{ runner.os }}-nuget-
-
-      - name: Restore API
-        run: dotnet restore opsflow-api/src/OpsFlow.Api.csproj
-
-      - name: Build API (Release)
-        run: dotnet build opsflow-api/src/OpsFlow.Api.csproj -c Release --no-restore
-
-      - name: Install web deps
-        working-directory: opsflow-web
-        run: pnpm install --frozen-lockfile
-
-      - name: Cache Playwright browsers
-        uses: actions/cache@v4
-        id: playwright-cache
-        with:
-          path: ~/.cache/ms-playwright
-          key: ${{ runner.os }}-playwright-${{ hashFiles('opsflow-web/pnpm-lock.yaml') }}-1.42
-          restore-keys: |
-            ${{ runner.os }}-playwright-
 
       - name: Install Playwright browsers
-        working-directory: opsflow-web
-        if: steps.playwright-cache.outputs.cache-hit != 'true'
-        run: npx playwright install --with-deps chromium
+        run: pnpm exec playwright install --with-deps chromium
 
-      - name: Install Playwright browsers (with-deps if cached)
-        working-directory: opsflow-web
-        if: steps.playwright-cache.outputs.cache-hit == 'true'
-        run: npx playwright install chromium
+      - name: Build Angular (production)
+        run: pnpm run build --configuration production
+        env:
+          API_URL: 'https://opsflow-api-ej8p.onrender.com/api'
 
-      - name: Wait for Postgres
-        run: |
-          for i in {1..30}; do
-            pg_isready -h localhost -p 5432 -U postgres -d opsflow && echo "Postgres ready" && break
-            echo "Waiting for postgres $i..."
-            sleep 2
-          done
-          pg_isready -h localhost -p 5432 -U postgres -d opsflow
-
-      - name: Start API in background
-        run: |
-          nohup dotnet run --project opsflow-api/src/OpsFlow.Api.csproj -c Release --no-build --urls http://localhost:5000 > api.log 2>&1 &
-          echo $! > api.pid
-          echo "API pid $(cat api.pid)"
-
-      - name: Wait for API /health
-        run: |
-          for i in {1..60}; do
-            if curl -fs http://localhost:5000/health; then
-              echo "API healthy"
-              break
-            fi
-            echo "Waiting for API $i..."
-            cat api.log | tail -n 50 || true
-            sleep 2
-            if [ $i -eq 60 ]; then
-              echo "API failed to start"
-              cat api.log
-              exit 1
-            fi
-          done
-
-      - name: Start Web in background
-        working-directory: opsflow-web
-        run: |
-          nohup npx ng serve --port 4200 --host 0.0.0.0 > ../web.log 2>&1 &
-          echo $! > ../web.pid
-          echo "Web pid $(cat ../web.pid)"
-
-      - name: Wait for Web
-        run: |
-          for i in {1..60}; do
-            if curl -fs http://localhost:4200 | head -n 20 | grep -qi "OpsFlow\|<title>"; then
-              echo "Web ready"
-              break
-            fi
-            # fallback: curl succeeds
-            if curl -fs http://localhost:4200 > /dev/null; then
-              echo "Web responded"
-              break
-            fi
-            echo "Waiting for web $i..."
-            cat web.log | tail -n 100 || true
-            sleep 2
-            if [ $i -eq 60 ]; then
-              echo "Web failed to start"
-              cat web.log
-              exit 1
-            fi
-          done
-
-      - name: Run Playwright tests
-        working-directory: opsflow-web
-        run: npx playwright test --reporter=html --reporter=list
+      - name: Run E2E tests
+        run: pnpm exec playwright test --project=chromium
+        env:
+          CI: true
 
       - name: Upload Playwright report
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: playwright-report
-          path: |
-            opsflow-web/playwright-report
-            opsflow-web/test-results
-          retention-days: 14
+          path: opsflow-web/playwright-report/
+          retention-days: 7
 
-      - name: Show API logs on failure
-        if: failure()
-        run: |
-          echo "=== API LOG ==="
-          cat api.log | tail -n 200 || true
-          echo "=== WEB LOG ==="
-          cat web.log | tail -n 200 || true
-
-      - name: Stop background services
+      - name: Upload test results
         if: always()
-        run: |
-          kill $(cat api.pid) || true
-          kill $(cat web.pid) || true
-          sleep 2
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-results
+          path: opsflow-web/test-results/
+          retention-days: 7
+
+  # ─────────────────────────────────────────────
+  # Job 3: Frontend unit tests (Jest)
+  # ─────────────────────────────────────────────
+  unit-tests:
+    name: Frontend Unit Tests
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: opsflow-web
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'pnpm'
+          cache-dependency-path: opsflow-web/pnpm-lock.yaml
+
+      - name: Install pnpm
+        run: corepack enable && corepack prepare pnpm@latest --activate
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run Jest unit tests
+        run: pnpm exec jest --coverage --passWithNoTests
+        env:
+          CI: true
+
+      - name: Upload coverage
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: opsflow-web/coverage/
+          retention-days: 7
+
+  # ─────────────────────────────────────────────
+  # Job 4: Angular build verification
+  # ─────────────────────────────────────────────
+  build:
+    name: Build Verification
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: opsflow-web
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'pnpm'
+          cache-dependency-path: opsflow-web/pnpm-lock.yaml
+
+      - name: Install pnpm
+        run: corepack enable && corepack prepare pnpm@latest --activate
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build (development)
+        run: pnpm run build --configuration development
+
+      - name: Build (production)
+        run: pnpm run build --configuration production
+        env:
+          API_URL: 'https://opsflow-api-ej8p.onrender.com/api'

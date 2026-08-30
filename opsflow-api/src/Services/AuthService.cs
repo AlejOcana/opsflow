@@ -19,13 +19,11 @@ public interface IAuthService
 
 public class AuthService : IAuthService
 {
-    private readonly OpsFlowDbContext _context;
     private readonly IConfiguration _configuration;
     private readonly IUserRepository _userRepository;
 
-    public AuthService(OpsFlowDbContext context, IConfiguration configuration, IUserRepository userRepository)
+    public AuthService(IConfiguration configuration, IUserRepository userRepository)
     {
-        _context = context;
         _configuration = configuration;
         _userRepository = userRepository;
     }
@@ -86,7 +84,7 @@ public class AuthService : IAuthService
             new Claim(ClaimTypes.Role, user.Role.ToString())
         };
 
-        var expiry = DateTime.UtcNow.AddMinutes(int.Parse(_configuration["Jwt:ExpiryMinutes"]!));
+        var expiry = DateTime.UtcNow.AddMinutes(int.Parse(_configuration["Jwt:ExpiryMinutes"] ?? "60"));
 
         var token = new JwtSecurityToken(
             issuer: _configuration["Jwt:Issuer"],

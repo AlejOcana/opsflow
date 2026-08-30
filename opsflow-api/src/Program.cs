@@ -154,13 +154,13 @@ if (app.Environment.IsDevelopment() || app.Environment.IsProduction())
     app.UseSwaggerUI();
 }
 
+// Use custom exception middleware before CORS so CORS errors are also caught
+app.UseExceptionMiddleware();
+
 var corsOriginsForUse = app.Configuration["CORS:AllowedOrigins"]
     ?? Environment.GetEnvironmentVariable("CORS_ALLOWED_ORIGINS")
     ?? Environment.GetEnvironmentVariable("CORS__AllowedOrigins");
 app.UseCors(!string.IsNullOrWhiteSpace(corsOriginsForUse) ? "Restricted" : "AllowAll");
-
-// Use custom exception middleware
-app.UseExceptionMiddleware();
 
 app.UseAuthentication();
 app.UseAuthorization();

@@ -46,7 +46,9 @@ public class AuthController : ControllerBase
     [Authorize]
     public async Task<ActionResult> GetCurrentUser()
     {
-        var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value!);
+        var claimValue = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (!int.TryParse(claimValue, out var userId))
+            return Unauthorized();
         var user = await _authService.GetCurrentUserAsync(userId);
         if (user == null)
             return NotFound();
