@@ -83,7 +83,7 @@ export async function setAuthStorage(page: Page, role: MockRole) {
 }
 
 export async function clearAuthStorage(page: Page) {
-  await page.evaluate(() => {
+  await page.addInitScript(() => {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
   });
