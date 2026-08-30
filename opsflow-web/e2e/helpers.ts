@@ -80,14 +80,6 @@ export async function setAuthStorage(page: Page, role: MockRole) {
     },
     { token: res.token, user }
   );
-  // Also set for already-loaded page
-  await page.evaluate(
-    ({ token, user }) => {
-      localStorage.setItem('token', token);
-      localStorage.setItem('user', JSON.stringify(user));
-    },
-    { token: res.token, user }
-  );
 }
 
 export async function clearAuthStorage(page: Page) {
