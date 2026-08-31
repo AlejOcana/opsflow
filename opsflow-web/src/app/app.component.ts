@@ -102,10 +102,6 @@ import { NotificationService } from './core/services/notification.service';
               </button>
             }
             
-            <span class="toolbar-title" [class.mobile]="isMobile()">
-              {{ pageTitle() }}
-            </span>
-            
             <span class="spacer"></span>
             
             <!-- Notifications bell -->
@@ -374,19 +370,6 @@ import { NotificationService } from './core/services/notification.service';
       border-bottom: 1px solid rgba(15, 23, 42, 0.07);
       box-shadow: 0 1px 12px rgba(15, 23, 42, 0.06) !important;
       color: var(--text-primary) !important;
-
-      .toolbar-title {
-        font-family: var(--font-display);
-        font-size: 17px;
-        font-weight: 700;
-        letter-spacing: -0.02em;
-        margin-left: 6px;
-        color: #0f172a;
-      }
-
-      .toolbar-title.mobile {
-        font-size: 16px;
-      }
     }
 
     .spacer {
@@ -572,7 +555,6 @@ import { NotificationService } from './core/services/notification.service';
 })
 export class AppComponent implements OnInit, OnDestroy {
   isMobile = signal(false);
-  pageTitle = signal('Dashboard');
 
   private pollTimer: any = null;
   private routerSub: any = null;

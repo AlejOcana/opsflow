@@ -192,34 +192,28 @@ interface Stats extends DashboardStats {}
             <div class="kpi-tiles">
               <mat-card class="kpi-tile">
                 <div class="tile-icon mtbf"><mat-icon>schedule</mat-icon></div>
-                <div class="tile-body">
-                  <div class="tile-value">{{ mtbfHours().toFixed(1) }}<small>h</small></div>
-                  <div class="tile-label">MTBF</div>
-                  <div class="tile-hint">Mean time between failures</div>
-                </div>
+                <div class="tile-value">{{ mtbfHours().toFixed(1) }}<small>h</small></div>
+                <div class="tile-label">MTBF</div>
+                <div class="tile-hint">Mean time between failures</div>
               </mat-card>
 
               <mat-card class="kpi-tile">
                 <div class="tile-icon lead"><mat-icon>timer</mat-icon></div>
-                <div class="tile-body">
-                  <div class="tile-value">{{ leadTime().toFixed(1) }}<small>d</small></div>
-                  <div class="tile-label">Lead time avg</div>
-                  <div class="tile-hint">Open → Resolved</div>
-                </div>
+                <div class="tile-value">{{ leadTime().toFixed(1) }}<small>d</small></div>
+                <div class="tile-label">Lead time avg</div>
+                <div class="tile-hint">Open → Resolved</div>
               </mat-card>
 
               <mat-card class="kpi-tile" [class.warn]="slaAtRisk() > 0">
                 <div class="tile-icon sla" [class.warn-icon]="slaAtRisk() > 0"><mat-icon>warning</mat-icon></div>
-                <div class="tile-body">
-                  <div class="tile-value">{{ slaAtRisk() }}</div>
-                  <div class="tile-label">SLA at risk</div>
-                  <div class="tile-hint">
-                    @if (slaAtRisk() > 0) {
-                      <span class="warn-chip">Action needed</span>
-                    } @else {
-                      All within SLA
-                    }
-                  </div>
+                <div class="tile-value">{{ slaAtRisk() }}</div>
+                <div class="tile-label">SLA at risk</div>
+                <div class="tile-hint">
+                  @if (slaAtRisk() > 0) {
+                    <span class="warn-chip">Action needed</span>
+                  } @else {
+                    All within SLA
+                  }
                 </div>
               </mat-card>
             </div>
@@ -406,11 +400,8 @@ interface Stats extends DashboardStats {}
     }
     .kpi-grid {
       display: grid;
-      grid-template-columns: 1.42fr 0.95fr;
+      grid-template-columns: 1fr;
       gap: 16px;
-    }
-    @media (max-width: 960px) {
-      .kpi-grid { grid-template-columns: 1fr; }
     }
     .kpi-card {
       padding: 18px 18px 16px !important;
@@ -448,12 +439,14 @@ interface Stats extends DashboardStats {}
     .severity-count { font-family: var(--font-mono); font-size: 13px; font-weight: 700; text-align: right; color: #0f172a; }
 
     /* KPI tiles column */
-    .kpi-tiles { display: flex; flex-direction: column; gap: 16px; }
+    .kpi-tiles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+    @media (max-width: 960px) { .kpi-tiles { grid-template-columns: 1fr; } }
     .kpi-tile {
-      display: flex; align-items: center; gap: 16px; padding: 18px !important; flex: 1;
+      display: flex; flex-direction: column; align-items: center; text-align: center; padding: 20px 16px !important; flex: 1;
       border-radius: 20px !important;
       border: 1px solid rgba(15,23,42,0.08) !important;
       box-shadow: 0 4px 24px rgba(15,23,42,0.06), 0 1px 3px rgba(15,23,42,0.04) !important;
+      background: white !important;
       transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
       animation: subtleIn 0.45s ease both;
       &:hover { transform: translateY(-2px); box-shadow: 0 10px 28px rgba(15,23,42,0.08) !important; border-color: rgba(92,77,219,0.14) !important; }
@@ -461,17 +454,16 @@ interface Stats extends DashboardStats {}
     }
     .tile-icon {
       width: 48px; height: 48px; border-radius: 14px; display: grid; place-items: center; flex-shrink: 0; border: 1px solid rgba(255,255,255,0.6);
-      box-shadow: 0 4px 14px rgba(15,23,42,0.08);
+      box-shadow: 0 4px 14px rgba(15,23,42,0.08); margin-bottom: 14px;
       mat-icon { font-size: 22px; width: 22px; height: 22px; color: white; }
       &.mtbf { background: linear-gradient(135deg, #1a237e, #5c4ddb); }
       &.lead { background: linear-gradient(135deg, #0e7490, #06b6d4); }
       &.sla { background: #f1f5f9; border-color: rgba(15,23,42,0.06); mat-icon { color: #64748b; } }
       &.warn-icon { background: linear-gradient(135deg, #f59e0b, #d97706); mat-icon { color: white; } }
     }
-    .tile-body { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
-    .tile-value { font-family: var(--font-mono); font-size: 26px; font-weight: 700; letter-spacing: -0.04em; line-height: 1; display: flex; align-items: baseline; gap: 3px; color: #0f172a; small { font-size: 13px; font-weight: 600; color: #64748b; letter-spacing: -0.02em; } }
-    .tile-label { font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: #475569; margin-top: 2px; }
-    .tile-hint { font-size: 12px; color: #94a3b8; margin-top: 1px; line-height: 1.4; }
+    .tile-value { font-family: var(--font-mono); font-size: 26px; font-weight: 700; letter-spacing: -0.04em; line-height: 1; display: flex; align-items: baseline; justify-content: center; gap: 3px; color: #0f172a; margin-bottom: 4px; small { font-size: 13px; font-weight: 600; color: #64748b; letter-spacing: -0.02em; } }
+    .tile-label { font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: #475569; margin-bottom: 4px; }
+    .tile-hint { font-size: 12px; color: #94a3b8; line-height: 1.4; }
     .warn-chip { background: #fffbeb; color: #92400e; padding: 3px 8px; border-radius: 999px; font-weight: 700; font-size: 11px; border: 1px solid #fde68a; }
 
     /* Throughput */

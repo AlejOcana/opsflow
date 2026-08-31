@@ -63,7 +63,7 @@ import { environment } from '../../../environments/environment';
                           <span class="member-avatar"><mat-icon>person</mat-icon></span>
                           <div class="member-info">
                             <span class="member-name">{{ member.fullName }}</span>
-                            <span class="member-role">{{ member.role }}</span>
+                            <span class="member-role">{{ formatRole(member.role) }}</span>
                           </div>
                         </div>
                       }
@@ -350,7 +350,18 @@ export class TeamsComponent implements OnInit {
   teams = signal<any[]>([]);
   loading = signal(true);
 
+  private roleMap: Record<string, string> = {
+    'Admin': 'Administrator',
+    'Manager': 'Team Manager',
+    'Operator': 'Incident Handler',
+    'User': 'Viewer'
+  };
+
   constructor(private http: HttpClient) {}
+
+  formatRole(role: string): string {
+    return this.roleMap[role] || role;
+  }
 
   ngOnInit() {
     this.http.get<any[]>(`${environment.apiUrl}/teams`).subscribe({
