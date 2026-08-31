@@ -310,7 +310,7 @@ import { AuthService } from '../../core/services/auth.service';
       display: inline-flex;
       align-items: center;
       gap: 6px;
-      padding: 6px 6px 6px 12px;
+      padding: 4px 4px 4px 12px;
       background: #eef2ff;
       border: 1px solid rgba(67,56,202,0.14);
       color: #4338ca;
@@ -321,7 +321,16 @@ import { AuthService } from '../../core/services/auth.service';
       line-height: 1;
       animation: chipIn 0.28s ease both;
       mat-icon { font-size: 10px; width: 10px; height: 10px; color: #4338ca; }
-      button { width: 22px; height: 22px; line-height: 22px; margin-left: 2px; mat-icon { font-size: 14px; width: 14px; height: 14px; color: #4338ca; } }
+      button {
+        width: 24px;
+        height: 24px;
+        padding: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 50%;
+        mat-icon { font-size: 14px; width: 14px; height: 14px; color: #4338ca; }
+      }
     }
 
     .skeleton-table {

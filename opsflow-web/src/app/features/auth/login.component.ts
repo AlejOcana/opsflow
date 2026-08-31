@@ -70,7 +70,6 @@ import { AuthService } from '../../core/services/auth.service';
                 required
                 autocomplete="email"
                 placeholder="you@company.io">
-              <mat-icon matSuffix>email</mat-icon>
               @if (email && email.length > 0) {
                 <button mat-icon-button matSuffix type="button" (click)="email = ''" matTooltip="Clear" tabindex="-1">
                   <mat-icon>close</mat-icon>
@@ -157,7 +156,10 @@ import { AuthService } from '../../core/services/auth.service';
     </div>
   `,
   styles: [`
-    :host { display: block; }
+    :host {
+      display: block;
+      height: 100%;
+    }
 
     .login-container {
       display: flex;
@@ -166,6 +168,7 @@ import { AuthService } from '../../core/services/auth.service';
       align-items: center;
       min-height: 100vh;
       min-height: 100dvh;
+      height: 100%;
       background: #0b1026;
       position: relative;
       overflow: hidden;

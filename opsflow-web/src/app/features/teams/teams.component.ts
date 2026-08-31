@@ -3,13 +3,14 @@ import { CommonModule } from '@angular/common';
 import { MatCardModule } from '@angular/material/card';
 import { MatListModule } from '@angular/material/list';
 import { MatIconModule } from '@angular/material/icon';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { HttpClient } from '@angular/common/http';
 import { environment } from '../../../environments/environment';
 
 @Component({
   selector: 'app-teams',
   standalone: true,
-  imports: [CommonModule, MatCardModule, MatListModule, MatIconModule],
+  imports: [CommonModule, MatCardModule, MatListModule, MatIconModule, MatProgressSpinnerModule],
   template: `
     <div class="teams-page">
       <div class="page-header">
@@ -20,7 +21,12 @@ import { environment } from '../../../environments/environment';
         <span class="teams-count">{{ teams().length }} teams</span>
       </div>
 
-      @if (teams().length === 0) {
+      @if (loading()) {
+        <div class="loading-state">
+          <mat-spinner diameter="40"></mat-spinner>
+          <p>Loading teams…</p>
+        </div>
+      } @else if (teams().length === 0) {
         <div class="empty-state">
           <div class="empty-illustration">
             <mat-icon>groups</mat-icon>
@@ -52,12 +58,12 @@ import { environment } from '../../../environments/environment';
                       <span class="members-count">{{ team.members.length }}</span>
                     </h4>
                     <div class="members-list">
-                      @for (member of team.members; track member.userId) {
+                      @for (member of team.members; track member.id) {
                         <div class="member-item">
                           <span class="member-avatar"><mat-icon>person</mat-icon></span>
                           <div class="member-info">
-                            <span class="member-name">{{ member.userName }}</span>
-                            <span class="member-role">{{ member.roleInTeam }}</span>
+                            <span class="member-name">{{ member.fullName }}</span>
+                            <span class="member-role">{{ member.role }}</span>
                           </div>
                         </div>
                       }
@@ -301,6 +307,21 @@ import { environment } from '../../../environments/environment';
       line-height: 1.5;
     }
 
+    .loading-state {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 64px 32px;
+      gap: 16px;
+      p {
+        margin: 0;
+        color: #64748b;
+        font-size: 14px;
+        font-weight: 500;
+      }
+    }
+
     @media (max-width: 768px) {
       .page-header {
         flex-direction: column;
@@ -327,12 +348,19 @@ import { environment } from '../../../environments/environment';
 })
 export class TeamsComponent implements OnInit {
   teams = signal<any[]>([]);
+  loading = signal(true);
 
   constructor(private http: HttpClient) {}
 
   ngOnInit() {
     this.http.get<any[]>(`${environment.apiUrl}/teams`).subscribe({
-      next: (teams) => this.teams.set(teams)
+      next: (teams) => {
+        this.teams.set(teams);
+        this.loading.set(false);
+      },
+      error: () => {
+        this.loading.set(false);
+      }
     });
   }
 }

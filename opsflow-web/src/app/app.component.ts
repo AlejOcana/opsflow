@@ -191,21 +191,8 @@ import { NotificationService } from './core/services/notification.service';
         </mat-sidenav-content>
       </mat-sidenav-container>
     } @else {
-      <!-- Not authenticated: Show simplified layout without sidenav -->
-      <div class="no-sidenav-container">
-        <mat-toolbar color="primary" class="toolbar">
-          <mat-icon class="logo-icon">bolt</mat-icon>
-          <span class="toolbar-title">OpsFlow</span>
-          <span class="spacer"></span>
-          <button mat-icon-button routerLink="/login" aria-label="Sign in">
-            <mat-icon>login</mat-icon>
-          </button>
-        </mat-toolbar>
-        
-        <main class="main-content">
-          <router-outlet></router-outlet>
-        </main>
-      </div>
+      <!-- Not authenticated: no outer toolbar — login page owns its full layout -->
+      <router-outlet></router-outlet>
     }
   `,
   styles: [`
@@ -425,49 +412,6 @@ import { NotificationService } from './core/services/notification.service';
       overflow-y: auto;
     }
 
-    /* Non-authenticated layout */
-    .no-sidenav-container {
-      display: flex;
-      flex-direction: column;
-      min-height: 100vh;
-      background: #f8f9fc;
-
-      .toolbar {
-        position: sticky;
-        top: 0;
-        z-index: 100;
-        height: 60px;
-        padding: 0 20px;
-        background: rgba(255,255,255,0.84) !important;
-        backdrop-filter: blur(18px) saturate(1.25);
-        -webkit-backdrop-filter: blur(18px) saturate(1.25);
-        border-bottom: 1px solid rgba(15,23,42,0.07);
-        box-shadow: 0 1px 12px rgba(15,23,42,0.06) !important;
-
-        .logo-icon {
-          font-size: 22px;
-          width: 22px;
-          height: 22px;
-          margin-right: 10px;
-          color: #1a237e;
-        }
-
-        .toolbar-title {
-          font-family: var(--font-display);
-          font-size: 17px;
-          font-weight: 700;
-          letter-spacing: -0.02em;
-          color: #0f172a;
-        }
-      }
-
-      .main-content {
-        flex: 1;
-        padding: 28px;
-        overflow-y: auto;
-      }
-    }
-
     .user-info {
       display: flex;
       align-items: center;
@@ -481,9 +425,10 @@ import { NotificationService } from './core/services/notification.service';
         color: #64748b;
         background: #f1f5f9;
         border-radius: 50%;
-        display: grid;
-        place-items: center;
-        padding: 6px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
       }
 
       .user-details {
