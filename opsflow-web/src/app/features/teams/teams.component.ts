@@ -350,17 +350,21 @@ export class TeamsComponent implements OnInit {
   teams = signal<any[]>([]);
   loading = signal(true);
 
-  private roleMap: Record<string, string> = {
-    'Admin': 'Administrator',
-    'Manager': 'Team Manager',
-    'Operator': 'Incident Handler',
-    'User': 'Viewer'
+  private roleMap: Record<string, string[]> = {
+    'Admin': ['Platform Admin', 'Organization Admin', 'System Admin'],
+    'Manager': ['Engineering Manager', 'Team Lead', 'On-Call Lead'],
+    'Operator': ['Incident Responder', 'SRE', 'DevOps Engineer', 'On-Call Engineer', 'Reliability Engineer'],
+    'User': ['Stakeholder', 'Reporter', 'Observer']
   };
 
   constructor(private http: HttpClient) {}
 
   formatRole(role: string): string {
-    return this.roleMap[role] || role;
+    const options = this.roleMap[role];
+    if (!options || options.length === 0) return role;
+    // Deterministic variety: use a simple hash of role to pick consistently
+    const hash = role.split('').reduce((a, c) => a + c.charCodeAt(0), 0);
+    return options[hash % options.length];
   }
 
   ngOnInit() {
