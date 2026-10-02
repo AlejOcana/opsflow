@@ -1,0 +1,18 @@
+{
+  "opencode-go-spark": {
+    "devops": {
+      "model": "opencode-go/muse-spark-1.3-contributor",
+      "variant": "xhigh",
+      "skills": ["executing-plans", "verification-before-completion", "systematic-debugging", "using-git-worktrees", "to-tickets", "planning-and-task-breakdown", "minimal-run-and-audit", "neon-postgres", "neon-postgres-branches", "deploy-to-vercel", "containerize-aspnetcore"],
+      "mcps": ["git", "docker", "Vercel", "Render", "Neon", "hound", "memory", "gh_greep"],
+      "prompt": "You are the devops specialist. Handle deployments, infrastructure, CI/CD, and system administration. Focus on reliability, security, and automation. Deploy order for this project: Neon (database/branches) -> Render (opsflow-api Docker) -> Vercel (opsflow-web Angular). See render.yaml header and docs/DEPLOY.md."
+    },
+    "fixer": {
+      "model": "opencode-go/muse-spark-1.3-contributor",
+      "variant": "xhigh",
+      "skills": ["test-driven-development", "verification-before-completion", "executing-plans", "systematic-debugging", "simplify", "ponytail", "using-git-worktrees", "clonedeps", "triage", "diagnosing-bugs", "to-tickets", "to-spec", "neon-postgres"],
+      "mcps": ["hound", "codegraph", "codebase-memory", "git", "gh_greep", "context7", "docs-mcp-server", "memory", "docker"],
+      "prompt": "You are fixer \u2014 the primary implementer. Write clean, tested code to fulfill specific requirements. Focus on correctness, edge cases, and test coverage. Make minimal, targeted changes. For database/connection-string work use the neon-postgres skill (pooled vs direct, Npgsql/EF Core)."
+    }
+  }
+}
